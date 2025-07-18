@@ -35,7 +35,6 @@ function updateVersionInfo() {
 
 function updateCacheBust() {
     const indexPath = path.join(__dirname, 'public', 'index.html');
-    const swPath = path.join(__dirname, 'public', 'sw.js');
     
     // Update version info first
     const { timestamp, buildNumber } = updateVersionInfo();
@@ -51,16 +50,16 @@ function updateCacheBust() {
         `<meta name="cache-bust" content="${timestamp}">`
     );
     
-    // Update CSS version and bust parameter with timestamp
+    // Update CSS version and bust parameter
     content = content.replace(
-        /\/css\/styles\.css\?v=\d+&bust=\d+(&nocache=true)?(&ts=\d+)?/g,
-        `/css/styles.css?v=${buildNumber}&bust=${timestamp}&nocache=true&ts=${timestamp}`
+        /\/css\/styles\.css\?v=\d+&bust=\d+(&nocache=true)?/g,
+        `/css/styles.css?v=${buildNumber}&bust=${timestamp}&nocache=true`
     );
     
-    // Update JS files version and bust parameter with timestamp
+    // Update JS files version and bust parameter
     content = content.replace(
-        /\/js\/(\w+)\.js\?v=\d+&bust=\d+(&nocache=true)?(&ts=\d+)?/g,
-        `/js/$1.js?v=${buildNumber}&bust=${timestamp}&nocache=true&ts=${timestamp}`
+        /\/js\/(\w+)\.js\?v=\d+&bust=\d+(&nocache=true)?/g,
+        `/js/$1.js?v=${buildNumber}&bust=${timestamp}&nocache=true`
     );
     
     // Update CURRENT_VERSION in script
@@ -76,23 +75,10 @@ function updateCacheBust() {
     );
     
     fs.writeFileSync(indexPath, content, 'utf8');
-    
-    // Update Service Worker cache name
-    let swContent = fs.readFileSync(swPath, 'utf8');
-    const swVersion = 'v1.7'; // Increment manually when major changes
-    
-    swContent = swContent.replace(
-        /const CACHE_NAME = '[^']*';/,
-        `const CACHE_NAME = 'pedmed-${swVersion}-${timestamp}';`
-    );
-    
-    fs.writeFileSync(swPath, swContent, 'utf8');
-    
     console.log('✅ Cache bust updated successfully!');
     console.log(`📝 New version: ${buildNumber}`);
     console.log(`⏰ New timestamp: ${timestamp}`);
     console.log(`🚀 Version info updated in version.js`);
-    console.log(`🔧 Service Worker cache updated to: pedmed-${swVersion}-${timestamp}`);
 }
 
 // Chạy script

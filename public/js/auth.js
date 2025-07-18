@@ -1,82 +1,15 @@
-// Optimized Device ID generation function
-async function getDeviceId() {
-  let deviceId = localStorage.getItem('deviceId');
-  let deviceName = localStorage.getItem('deviceName');
-  
-  if (!deviceId || !deviceName) {
-    // Generate short, optimized device ID (8 characters)
-    deviceId = Math.random().toString(36).substring(2, 10);
-    
-    // Get real device info
-    const ua = navigator.userAgent;
-    let detectedDevice = 'Unknown Device';
-    
-    // Detect device type and OS
-    if (/Android/.test(ua)) {
-      const androidMatch = ua.match(/Android (\d+\.?\d*)/);
-      detectedDevice = androidMatch ? `Android ${androidMatch[1]}` : 'Android';
-    } else if (/iPhone|iPad|iPod/.test(ua)) {
-      const iosMatch = ua.match(/OS (\d+_?\d*)/);
-      if (iosMatch) {
-        const version = iosMatch[1].replace('_', '.');
-        detectedDevice = /iPad/.test(ua) ? `iPad iOS ${version}` : `iPhone iOS ${version}`;
-      } else {
-        detectedDevice = /iPad/.test(ua) ? 'iPad' : 'iPhone';
-      }
-    } else if (/Windows NT/.test(ua)) {
-      const winMatch = ua.match(/Windows NT (\d+\.?\d*)/);
-      if (winMatch) {
-        const version = winMatch[1];
-        detectedDevice = version === '10.0' ? 'Windows 10' : `Windows ${version}`;
-      } else {
-        detectedDevice = 'Windows';
-      }
-    } else if (/Mac OS X/.test(ua)) {
-      const macMatch = ua.match(/Mac OS X (\d+_?\d*_?\d*)/);
-      if (macMatch) {
-        const version = macMatch[1].replace(/_/g, '.');
-        detectedDevice = `macOS ${version}`;
-      } else {
-        detectedDevice = 'macOS';
-      }
-    } else if (/Linux/.test(ua)) {
-      detectedDevice = 'Linux';
-    }
-    
-    // Add browser info for desktop
-    if (!/Android|iPhone|iPad|iPod/.test(ua)) {
-      if (/Chrome/.test(ua) && !/Edge/.test(ua)) {
-        detectedDevice += ' (Chrome)';
-      } else if (/Firefox/.test(ua)) {
-        detectedDevice += ' (Firefox)';
-      } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
-        detectedDevice += ' (Safari)';
-      } else if (/Edge/.test(ua)) {
-        detectedDevice += ' (Edge)';
-      }
-    }
-    
-    localStorage.setItem('deviceId', deviceId);
-    localStorage.setItem('deviceName', detectedDevice);
-    deviceName = detectedDevice;
-  }
-  
-  return { 
-    deviceId: deviceId, 
-    deviceName: deviceName 
-  };
-}
-
 const Auth = {
     isLoggedIn: () => localStorage.getItem('isLoggedIn') === 'true',
     getUser: () => localStorage.getItem('loggedInUser'),
     getDeviceId: async () => {
+      // Device ID được tạo từ hardware fingerprint, không lưu localStorage
       const { deviceId } = await getDeviceId();
       return deviceId;
     },
     login: (username) => {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('loggedInUser', username);
+      // Không lưu deviceId vào localStorage nữa vì nó sẽ được tạo từ hardware
     },
     logout: () => localStorage.clear()
 };
@@ -125,15 +58,9 @@ const Auth = {
         const result = await optimizedFetch(`${BACKEND_URL}/api/check-session`, {
             method: "POST",
             body: JSON.stringify({ username: loggedInUser, deviceId }),
-        }); // Remove cache parameters - not supported in optimizedFetch
+        }, cacheKey, 2 * 60 * 1000); // Cache 2 minutes
 
         console.log("📌 Session check result:", result);
-
-        // Handle case where result is undefined or null
-        if (!result) {
-            console.warn("⚠️ Empty response from server");
-            return !isOnline; // Return true if offline (assume session valid)
-        }
 
         if (!result.success) {
             // Handle error responses
@@ -223,22 +150,7 @@ const Auth = {
       
       let errorMessage = "Đã xảy ra lỗi không xác định!";
       
-      // Check for specific errors and add fallback
-      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-        // Fallback offline login for demo purposes
-        if (username && password) {
-          console.log('🔄 Backend unavailable, using offline mode');
-          
-          // Offline login - devices will be synced when backend is available
-          Auth.login(username);
-          document.getElementById("login-screen").style.display = "none";
-          document.getElementById("main-app").style.display = "block";
-          errorDisplay.style.display = "none";
-          hideSpinner();
-          return;
-        }
-        errorMessage = "Sai tài khoản hoặc mật khẩu!";
-      } else if (!isOnline) {
+      if (!isOnline) {
         errorMessage = "Không có kết nối mạng. Vui lòng kiểm tra kết nối!";
       } else if (error.message.includes('timeout')) {
         errorMessage = "Kết nối quá chậm. Vui lòng thử lại!";
@@ -876,13 +788,3 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
       alert("Lỗi khi đăng xuất thiết bị: " + data.message);
     }
   }
-
-// Export functions to global scope
-window.debouncedHandleLogin = debouncedHandleLogin;
-window.logout = logout;
-window.showForgotPasswordModal = showForgotPasswordModal;
-window.showRegisterModal = showRegisterModal;
-window.requestOTP = requestOTP;
-window.verifyOTP = verifyOTP;
-window.resetPassword = resetPassword;
-window.registerUser = registerUser;

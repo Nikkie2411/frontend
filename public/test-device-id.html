@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Device ID</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .device-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .device-id {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c5aa0;
+            word-break: break-all;
+        }
+        .fingerprint-details {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .comparison {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Device ID Generator</h1>
+        <p>Test này sẽ hiển thị Device ID được tạo từ hardware fingerprint. Mở trang này trên nhiều trình duyệt khác nhau trên cùng thiết bị để kiểm tra tính nhất quán.</p>
+        
+        <button onclick="generateDeviceId()">🔄 Tạo Device ID</button>
+        <button onclick="clearResults()">🗑️ Xóa kết quả</button>
+        <button onclick="testDifferentMethods()">🔬 So sánh các phương pháp</button>
+        
+        <div id="results"></div>
+        
+        <div class="comparison">
+            <h3>📋 Cách kiểm tra:</h3>
+            <ol>
+                <li>Mở trang này trên <strong>Cốc cốc</strong> và ghi lại Device ID</li>
+                <li>Mở trang này trên <strong>Edge</strong> (cùng thiết bị) và so sánh Device ID</li>
+                <li>Mở trang này trên <strong>Chrome</strong> (cùng thiết bị) và so sánh Device ID</li>
+                <li>Mở trang này trên <strong>Firefox</strong> (cùng thiết bị) và so sánh Device ID</li>
+                <li>Nếu Device ID giống nhau trên tất cả trình duyệt = <span style="color: green; font-weight: bold;">✅ THÀNH CÔNG!</span></li>
+            </ol>
+            <div style="background: #e8f5e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong>💡 Lưu ý:</strong> Phiên bản mới này chỉ sử dụng thông tin phần cứng ổn định nhất:
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>Kích thước màn hình (screen resolution)</li>
+                    <li>Độ sâu màu (color depth)</li>
+                    <li>Múi giờ (timezone)</li>
+                    <li>Số lõi CPU (CPU cores)</li>
+                    <li>Dung lượng RAM (device memory)</li>
+                    <li>Hỗ trợ cảm ứng (touch points)</li>
+                    <li>Platform đã chuẩn hóa</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="comparison-section" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            <h3>📊 So sánh Device ID</h3>
+            <button onclick="addToComparison()">➕ Thêm Device ID hiện tại vào so sánh</button>
+            <button onclick="clearComparison()">🗑️ Xóa so sánh</button>
+            <div id="comparison-results"></div>
+        </div>
+        
+        <div id="storage-test">
+            <h3>💾 Storage Test</h3>
+            <button onclick="saveToStorage()">Lưu vào localStorage</button>
+            <button onclick="loadFromStorage()">Đọc từ localStorage</button>
+            <button onclick="clearStorage()">Xóa localStorage</button>
+            <div id="storage-result"></div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script>
+        let generateCount = 0;
+        
+        async function generateDeviceId() {
+            try {
+                generateCount++;
+                const startTime = performance.now();
+                const { deviceId, deviceName } = await getDeviceId();
+                const endTime = performance.now();
+                const generateTime = Math.round(endTime - startTime);
+                
+                const resultDiv = document.getElementById('results');
+                const resultHtml = `
+                    <div class="device-info">
+                        <h3>🆔 Lần tạo #${generateCount} (${new Date().toLocaleTimeString()})</h3>
+                        <div class="device-id">Device ID: ${deviceId}</div>
+                        <p><strong>Device Name:</strong> ${deviceName}</p>
+                        <p><strong>Thời gian tạo:</strong> ${generateTime}ms</p>
+                        <p><strong>Trình duyệt:</strong> ${navigator.userAgent}</p>
+                    </div>
+                `;
+                
+                resultDiv.innerHTML = resultHtml + resultDiv.innerHTML;
+                
+                // Hiển thị thông tin fingerprint chi tiết
+                showFingerprintDetails();
+                
+            } catch (error) {
+                console.error('Lỗi tạo Device ID:', error);
+                document.getElementById('results').innerHTML = `
+                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; color: #c62828;">
+                        <h3>❌ Lỗi</h3>
+                        <p>${error.message}</p>
+                    </div>
+                ` + document.getElementById('results').innerHTML;
+            }
+        }
+        
+        function showFingerprintDetails() {
+            // Chuẩn hóa platform
+            let platformInfo = navigator.platform.toLowerCase();
+            if (platformInfo.includes('win')) platformInfo = 'windows';
+            else if (platformInfo.includes('mac')) platformInfo = 'macos';
+            else if (platformInfo.includes('linux')) platformInfo = 'linux';
+            else if (platformInfo.includes('android')) platformInfo = 'android';
+            else if (platformInfo.includes('iphone') || platformInfo.includes('ipad')) platformInfo = 'ios';
+            
+            const details = {
+                '📺 Screen Width': screen.width,
+                '📺 Screen Height': screen.height,
+                '💻 Platform (normalized)': platformInfo,
+                '� Raw Platform': navigator.platform,
+                '⚠️ NOTE': 'Ultra-simple method chỉ sử dụng 3 thông tin trên'
+            };
+            
+            // Tính toán signature như trong code thực (ultra-simple version)
+            const ultraSimpleSignature = [
+                screen.width,
+                screen.height,
+                platformInfo
+            ].join('|');
+            
+            let detailsHtml = '<div class="fingerprint-details">';
+            detailsHtml += '<h4>🔍 Ultra-Simple Hardware Fingerprint:</h4>';
+            
+            for (const [key, value] of Object.entries(details)) {
+                detailsHtml += `<strong>${key}:</strong> ${value}<br>`;
+            }
+            
+            detailsHtml += '<br><strong>🔐 Signature:</strong><br>';
+            detailsHtml += `<code style="background: #f0f0f0; padding: 5px; border-radius: 3px; word-break: break-all;">${ultraSimpleSignature}</code><br><br>`;
+            
+            // Tính hash để so sánh
+            let hash = 0;
+            for (let i = 0; i < ultraSimpleSignature.length; i++) {
+                const char = ultraSimpleSignature.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            const computedId = Math.abs(hash).toString(36).padStart(8, '0').slice(0, 8);
+            detailsHtml += `<strong>🆔 Computed Device ID:</strong> <span style="color: #2c5aa0; font-weight: bold;">${computedId}</span>`;
+            
+            detailsHtml += '</div>';
+            
+            const resultDiv = document.getElementById('results');
+            resultDiv.innerHTML = detailsHtml + resultDiv.innerHTML;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            generateCount = 0;
+        }
+        
+        function saveToStorage() {
+            const testData = {
+                timestamp: new Date().toISOString(),
+                browser: navigator.userAgent.split(' ').pop(),
+                savedAt: Date.now()
+            };
+            localStorage.setItem('deviceIdTest', JSON.stringify(testData));
+            updateStorageDisplay();
+        }
+        
+        function loadFromStorage() {
+            updateStorageDisplay();
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('deviceIdTest');
+            updateStorageDisplay();
+        }
+        
+        function updateStorageDisplay() {
+            const stored = localStorage.getItem('deviceIdTest');
+            const resultDiv = document.getElementById('storage-result');
+            
+            if (stored) {
+                try {
+                    const data = JSON.parse(stored);
+                    resultDiv.innerHTML = `
+                        <div style="background: #e8f5e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                            <strong>📦 Data trong localStorage:</strong><br>
+                            Thời gian lưu: ${data.timestamp}<br>
+                            Trình duyệt: ${data.browser}<br>
+                            Timestamp: ${data.savedAt}
+                        </div>
+                    `;
+                } catch (e) {
+                    resultDiv.innerHTML = `<div style="color: red;">Lỗi parse data: ${e.message}</div>`;
+                }
+            } else {
+                resultDiv.innerHTML = `
+                    <div style="background: #ffebee; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        ❌ Không có data trong localStorage
+                    </div>
+                `;
+            }
+        }
+        
+        // Tự động tạo Device ID khi tải trang
+        window.addEventListener('DOMContentLoaded', () => {
+            generateDeviceId();
+            updateStorageDisplay();
+            loadComparison();
+        });
+        
+        // Comparison functions
+        let comparisonData = [];
+        
+        async function addToComparison() {
+            try {
+                const { deviceId, deviceName } = await getDeviceId();
+                const browserInfo = getBrowserInfo();
+                
+                const entry = {
+                    deviceId,
+                    deviceName,
+                    browser: browserInfo,
+                    timestamp: new Date().toLocaleString(),
+                    userAgent: navigator.userAgent
+                };
+                
+                // Kiểm tra xem đã có entry của browser này chưa
+                const existingIndex = comparisonData.findIndex(item => item.browser === browserInfo);
+                if (existingIndex !== -1) {
+                    comparisonData[existingIndex] = entry; // Update
+                } else {
+                    comparisonData.push(entry); // Add new
+                }
+                
+                saveComparison();
+                updateComparisonDisplay();
+                
+            } catch (error) {
+                console.error('Error adding to comparison:', error);
+            }
+        }
+        
+        function getBrowserInfo() {
+            const ua = navigator.userAgent.toLowerCase();
+            if (ua.includes('coccoc')) return 'Cốc cốc';
+            if (ua.includes('edg/')) return 'Microsoft Edge';
+            if (ua.includes('chrome') && !ua.includes('edg')) return 'Google Chrome';
+            if (ua.includes('firefox')) return 'Mozilla Firefox';
+            if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+            if (ua.includes('opera')) return 'Opera';
+            return 'Unknown Browser';
+        }
+        
+        function clearComparison() {
+            comparisonData = [];
+            localStorage.removeItem('deviceIdComparison');
+            updateComparisonDisplay();
+        }
+        
+        function saveComparison() {
+            localStorage.setItem('deviceIdComparison', JSON.stringify(comparisonData));
+        }
+        
+        function loadComparison() {
+            const stored = localStorage.getItem('deviceIdComparison');
+            if (stored) {
+                try {
+                    comparisonData = JSON.parse(stored);
+                    updateComparisonDisplay();
+                } catch (e) {
+                    console.error('Error loading comparison data:', e);
+                }
+            }
+        }
+        
+        function updateComparisonDisplay() {
+            const resultDiv = document.getElementById('comparison-results');
+            
+            if (comparisonData.length === 0) {
+                resultDiv.innerHTML = '<p style="color: #666; font-style: italic;">Chưa có dữ liệu so sánh</p>';
+                return;
+            }
+            
+            // Kiểm tra tính nhất quán của Device ID
+            const uniqueDeviceIds = [...new Set(comparisonData.map(item => item.deviceId))];
+            const isConsistent = uniqueDeviceIds.length === 1;
+            
+            let html = `
+                <div style="margin-top: 15px;">
+                    <h4>📊 Kết quả so sánh (${comparisonData.length} trình duyệt)</h4>
+                    <div style="background: ${isConsistent ? '#d4edda' : '#f8d7da'}; color: ${isConsistent ? '#155724' : '#721c24'}; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong>${isConsistent ? '✅ THÀNH CÔNG' : '❌ THẤT BẠI'}:</strong> 
+                        ${isConsistent ? 'Device ID nhất quán trên tất cả trình duyệt!' : `Phát hiện ${uniqueDeviceIds.length} Device ID khác nhau!`}
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="background: #e9ecef;">
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Trình duyệt</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Device ID</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Thời gian test</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            comparisonData.forEach(item => {
+                const isMainDeviceId = item.deviceId === uniqueDeviceIds[0];
+                html += `
+                    <tr style="background: ${isMainDeviceId ? '#f8f9fa' : '#fff3cd'};">
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.browser}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-family: monospace; font-weight: bold;">
+                            ${item.deviceId}
+                            ${!isMainDeviceId ? ' ⚠️' : ''}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${item.timestamp}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            if (!isConsistent) {
+                html += `
+                    <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <strong>🔍 Device IDs khác nhau:</strong><br>
+                        ${uniqueDeviceIds.map((id, index) => `${index + 1}. <code>${id}</code>`).join('<br>')}
+                    </div>
+                `;
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        async function testDifferentMethods() {
+            try {
+                console.log('🔬 Testing different Device ID methods...');
+                const comparison = await compareDeviceIdMethods();
+                
+                const resultDiv = document.getElementById('results');
+                const testResult = `
+                    <div class="device-info" style="background: #e3f2fd;">
+                        <h3>🔬 So sánh các phương pháp tạo Device ID</h3>
+                        <p><strong>Ultra Simple (current):</strong> <code>${comparison.ultraSimpleId}</code></p>
+                        <p><strong>Screen + Platform:</strong> <code>${comparison.screenPlatformId}</code></p>
+                        <p><strong>Screen Only:</strong> <code>${comparison.screenOnlyId}</code></p>
+                        <p><strong>Signature:</strong> <code>${comparison.signature}</code></p>
+                        <p><strong>Kết quả:</strong> ${comparison.ultraSimpleId === comparison.screenPlatformId ? '✅ Methods match' : '❌ Methods differ'}</p>
+                        <p><em>Kiểm tra console để xem chi tiết so sánh.</em></p>
+                    </div>
+                `;
+                
+                resultDiv.innerHTML = testResult + resultDiv.innerHTML;
+                
+            } catch (error) {
+                console.error('Lỗi test methods:', error);
+            }
+        }
+    </script>
+</body>
+</html>

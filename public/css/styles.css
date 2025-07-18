@@ -80,7 +80,6 @@ footer {
   width: 100%;
   position: relative;
   margin-top: auto;
-  line-height: 1.5;
 }
 
 footer a {
@@ -90,21 +89,6 @@ footer a {
 
 footer a:hover {
   text-decoration: underline;
-}
-
-/* Version info styling */
-#version-info {
-  transition: all 0.3s ease;
-  border-radius: 4px;
-  padding: 2px 6px;
-  display: inline-block;
-  margin-top: 4px;
-}
-
-#version-info:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  opacity: 1 !important;
-  transform: scale(1.05);
 }
 
 .page {
@@ -408,11 +392,11 @@ footer a:hover {
 }
 
 .age-dosage-table th, .age-dosage-table td {
-  padding: 8px; /* Giảm padding */
+  padding: 10px;
   text-align: left;
   border: 1px solid #ddd;
   vertical-align: top;
-  line-height: 1.4; /* Giảm line-height */
+  line-height: 1.5;
 }
 
 .age-dosage-table th {
@@ -437,7 +421,7 @@ footer a:hover {
 
 .tools-sidebar {
   background-color: #ffffff;
-  padding: 8px; /* Giảm padding */
+  padding: 10px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
   height: 85vh;
   overflow-y: auto;
@@ -448,7 +432,7 @@ footer a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px; /* Giảm margin-bottom */
+  margin-bottom: 10px;
   width: 100%;
   border-bottom: 2px solid #00b383;
 }
@@ -459,7 +443,7 @@ footer a:hover {
 }
 
 .tools-sidebar li {
-  padding: 8px; /* Giảm padding */
+  padding: 10px;
   cursor: pointer;
   border-bottom: 1px solid #ddd;
   transition: all 0.3s ease-in-out;
@@ -472,7 +456,7 @@ footer a:hover {
 
 .tools-content {
   background: #fff;
-  padding: 15px; /* Giảm padding */
+  padding: 20px;
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
   height: 75vh;
   display: flex;
@@ -482,21 +466,20 @@ footer a:hover {
 
 .tools-content h3 {
   border-bottom: 2px solid #00b383;
-  padding-bottom: 8px; /* Giảm padding-bottom */
-  margin-bottom: 10px; /* Thêm margin-bottom nhỏ */
+  padding-bottom: 10px;
 }
 
 .tool-form {
   width: 100%;
   max-width: 800px;
-  padding: 15px; /* Giảm padding */
+  padding: 20px;
 }
 
 .form-group {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px; /* Giảm margin-bottom */
+  margin-bottom: 15px;
 }
 
 .form-label {
@@ -581,7 +564,6 @@ footer a:hover {
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;
-    padding: 8px 10px; /* Giảm padding navbar */
   }
   .tools-content {
     width: 100%;
@@ -614,20 +596,20 @@ footer a:hover {
     position: sticky;
     top: 0;
     margin: 0;
-    padding: 10px 15px; /* Giảm padding */
-    font-size: 17px; /* Giảm font size */
+    padding: 12px 15px;
+    font-size: 18px;
     text-align: center;
   }
 
   /* Điều chỉnh phần nội dung chính */
   .col-md-8 {
     width: 100%;
-    padding-top: 50px; /* Giảm padding-top */
+    padding-top: 60px; /* Tránh chồng nút toggle */
   }
 
   /* Đảm bảo nội dung không bị che bởi navbar */
   .page.active {
-    padding-top: 50px; /* Giảm padding-top */
+    padding-top: 60px;
   }
 
   /* Điều chỉnh search-section trên mobile */
@@ -635,17 +617,13 @@ footer a:hover {
     position: relative;
     z-index: 998;
     flex-direction: column;
-    padding: 8px 10px; /* Giảm padding */
-    margin-bottom: 8px; /* Giảm margin-bottom */
-  }
-  .search-section h2 {
-    font-size: 16px; /* Giảm font size */
-    margin-bottom: 8px; /* Giảm margin */
+    padding: 10px;
+    margin-bottom: 10px;
   }
   .search-section input {
     width: 100%;
     flex-grow: 1;
-    padding: 6px 8px; /* Giảm padding */
+    padding: 8px;
     box-sizing: border-box;
   }
   .search-results {
@@ -667,47 +645,25 @@ footer a:hover {
   /* Mobile details content */
   .details-content {
     flex: 1;
-    padding: 8px; /* Giảm padding */
+    padding: 10px;
     overflow-y: auto;
   }
   
   /* Mobile scroll margin adjustments */
   .details-content .details-item {
-    scroll-margin-top: 60px; /* Giảm khoảng cách */
+    scroll-margin-top: 70px; /* Khoảng cách nhỏ hơn cho mobile */
   }
   
   .details-content h4 {
-    scroll-margin-top: 60px; /* Giảm khoảng cách */
-    padding-top: 6px; /* Giảm padding-top */
-    margin-bottom: 6px; /* Giảm margin-bottom */
-    font-size: 16px; /* Giảm font size */
-  }
-  .details-content p,
-  .details-content ul {
-    margin-bottom: 8px; /* Giảm margin */
-    font-size: 14px;
-  }
-  .details-content .row {
-    margin-bottom: 8px; /* Giảm margin */
+    scroll-margin-top: 70px;
+    padding-top: 8px;
   }
   
   #tools-page .tools-content {
-    margin-top: 8px; /* Giảm margin-top */
+    margin-top: 10px;
   }
   #drug-info .row.mt-4 {
-    margin-top: 8px !important; /* Giảm margin-top */
-  }
-  
-  /* Mobile footer version styling */
-  #version-info {
-    font-size: 11px !important;
-    display: block;
-    margin-top: 6px; /* Giảm margin-top */
-  }
-  
-  footer {
-    padding: 8px 10px; /* Giảm padding */
-    font-size: 13px;
+    margin-top: 10px !important;
   }
 }
 

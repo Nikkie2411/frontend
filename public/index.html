@@ -21,10 +21,10 @@
   <meta http-equiv="If-Modified-Since" content="0">
   
   <!-- Force reload timestamp with current datetime -->
-  <meta name="cache-bust" content="20250718163724">
+  <meta name="cache-bust" content="20250718170357">
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=17528&bust=20250718163724&nocache=true&ts=20250718163724">
+  <link rel="stylesheet" href="/css/styles.css?v=17528&bust=20250718170357&nocache=true">
 </head>
 <body>
   <!-- Login Screen -->
@@ -117,7 +117,7 @@
     <nav class="navbar">
       <img src="https://i.imgur.com/yT89ZWJ.png" class="navbar-logo">
       <div class="nav-links">
-        <a href="#" class="nav-link active" data-page="drug-info" onclick="simpleSwitchPage('drug-info'); return false;">Thuốc</a>
+        <a href="#" class="nav-link active" data-page="drug-info" onclick="simpleSwitchPage('drug-info'); return false;">Tra cứu</a>
         <a href="#" class="nav-link" data-page="tools-page" onclick="simpleSwitchPage('tools-page'); return false;">Công cụ</a>
       </div>
       <button class="btn btn-danger btn-logout" onclick="logout()">Đăng xuất</button>
@@ -339,8 +339,6 @@
   <a href="https://www.facebook.com/k.duoc.benhviennhitw" target="_blank" rel="noopener noreferrer"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968764.png" alt="Liên hệ Facebook" style="width:18px;height:18px;"></a> |
   <a href="https://www.youtube.com/@khoaduoc-nch" target="_blank" rel="noopener noreferrer"><img src="https://cdn-icons-png.flaticon.com/128/5968/5968852.png" alt="Youtube" style="width:20px;height:20px;"></a> | 
   Liên hệ: <a href="mailto:pedmedvn.nch@gmail.com" id="email-link">pedmedvn.nch@gmail.com</a>
-  <br>
-  <span id="version-info" style="font-size: 12px; opacity: 0.8; cursor: pointer;" title="Click để xem thông tin chi tiết version"></span>
   <script>
   document.addEventListener("DOMContentLoaded", function() {
     const currentYear = new Date().getFullYear();
@@ -362,118 +360,152 @@
 </footer>
 
 <!-- Your JS files with enhanced cache busting -->
-<script src="/js/version.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
-<script src="/js/utils.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
-<script src="/js/auth.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
-<script src="/js/drugSearch.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
-<script src="/js/tools.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
-<script src="/js/ui.js?v=17528&bust=20250718163724&nocache=true&ts=20250718163724"></script>
+<script src="/js/version.js?v=17528&bust=20250718170357&nocache=true"></script>
+<script src="/js/utils.js?v=17528&bust=20250718170357&nocache=true"></script>
+<script src="/js/auth.js?v=17528&bust=20250718170357&nocache=true"></script>
+<script src="/js/drugSearch.js?v=17528&bust=20250718170357&nocache=true"></script>
+<script src="/js/tools.js?v=17528&bust=20250718170357&nocache=true"></script>
+<script src="/js/ui.js?v=17528&bust=20250718170357&nocache=true"></script>
 
 <!-- Service Worker Registration -->
 <script>
+// Force version check and update with enhanced cache busting
 const CURRENT_VERSION = '17528';
-const CACHE_BUST = '20250718163724';
+const CACHE_BUST = '20250718170357';
 const LAST_VERSION = localStorage.getItem('app_version');
-const LAST_CACHE_BUST = localStorage.getItem('app_cache_bust');
 
-if ((LAST_VERSION && LAST_VERSION !== CURRENT_VERSION) || 
-    (LAST_CACHE_BUST && LAST_CACHE_BUST !== CACHE_BUST)) {
-  localStorage.clear();
-  sessionStorage.clear();
-  if ('caches' in window) {
-    caches.keys().then(cacheNames => {
-      cacheNames.forEach(cacheName => caches.delete(cacheName));
-      window.location.reload(true);
-    });
-  } else {
-    window.location.reload(true);
-  }
-} else {
-  localStorage.setItem('app_version', CURRENT_VERSION);
-  localStorage.setItem('app_cache_bust', CACHE_BUST);
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(registration => {
-    registration.update();
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          localStorage.clear();
-          sessionStorage.clear();
-          window.location.reload(true);
-        }
-      });
-    });
-  });
+// Force hard refresh when version changes
+if (LAST_VERSION && LAST_VERSION !== CURRENT_VERSION) {
+  console.log('🔄 New version detected, forcing complete cache clear');
+  
+  // Clear all possible caches
   if ('caches' in window) {
     caches.keys().then(cacheNames => {
       cacheNames.forEach(cacheName => {
-        if (!cacheName.includes(CACHE_BUST.slice(0, 8))) {
+        console.log('🗑️ Clearing cache for new version:', cacheName);
+        caches.delete(cacheName);
+      });
+    });
+  }
+  
+  // Clear all storage
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  // Force hard reload
+  window.location.reload(true);
+}
+
+localStorage.setItem('app_version', CURRENT_VERSION);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(registration => {
+      console.log('✅ Service Worker registered successfully:', registration);
+      
+      // Force update check
+      registration.update();
+      
+      // Handle updates
+      registration.addEventListener('updatefound', () => {
+        console.log('🔄 Service Worker update found');
+        const newWorker = registration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔄 New Service Worker installed, forcing reload');
+            // Force reload to get new version
+            window.location.reload(true);
+          }
+        });
+      });
+    })
+    .catch(error => {
+      console.warn('⚠️ Service Worker registration failed:', error);
+      // Don't block the app if SW fails
+    });
+  
+  // Force clear old caches on load
+  if ('caches' in window) {
+    caches.keys().then(cacheNames => {
+      cacheNames.forEach(cacheName => {
+        if (cacheName.includes('pedmed-v1.4') || cacheName.includes('pedmed-v1.3') || cacheName.includes('pedmed-v1.2') || cacheName.includes('pedmed-v1.1') || cacheName.includes('pedmed-v1.0')) {
+          console.log('🗑️ Clearing old cache:', cacheName);
           caches.delete(cacheName);
         }
       });
     });
   }
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data.type === 'CACHE_UPDATED') {
-      window.location.reload(true);
-    }
+  
+  // Clear all localStorage cache items with old version references
+  const oldCacheKeys = Object.keys(localStorage).filter(key => 
+    key.includes('v=5') || key.includes('v=6') || key.includes('v=7') || key.includes('v=8') || key.includes('v=9') || key.includes('v=10') ||
+    key.includes('cache') || key.includes('session') || key.includes('timestamp')
+  );
+  oldCacheKeys.forEach(key => {
+    console.log('🧹 Clearing old localStorage cache:', key);
+    localStorage.removeItem(key);
   });
+  
+  // Listen for SW messages
+  navigator.serviceWorker.addEventListener('message', event => {
+    console.log('📨 Message from Service Worker:', event.data);
+  });
+} else {
+  console.log('📱 Service Worker not supported in this browser');
 }
 
 // Clear app cache function
 async function clearAppCache() {
   try {
+    // Show loading
     const button = event.target;
     const originalText = button.innerHTML;
     button.innerHTML = '🔄 Đang xóa cache...';
     button.disabled = true;
     
+    // Clear localStorage
     localStorage.clear();
     sessionStorage.clear();
+    console.log('🧹 LocalStorage and SessionStorage cleared');
     
+    // Clear Service Worker caches
     if ('caches' in window) {
       const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+      await Promise.all(
+        cacheNames.map(cacheName => {
+          console.log('🗑️ Deleting cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
     }
     
+    // Unregister Service Worker
     if ('serviceWorker' in navigator) {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map(registration => registration.unregister()));
+      await Promise.all(
+        registrations.map(registration => {
+          console.log('🗑️ Unregistering Service Worker');
+          return registration.unregister();
+        })
+      );
     }
     
     button.innerHTML = '✅ Cache đã xóa!';
     setTimeout(() => {
       button.innerHTML = originalText;
       button.disabled = false;
+      
+      // Force reload page
       window.location.reload(true);
     }, 1000);
     
   } catch (error) {
-    alert('Không thể xóa cache. Vui lòng thử refresh trang');
+    console.error('❌ Error clearing cache:', error);
+    alert('Không thể xóa cache. Vui lòng thử refresh trang (kéo xuống để refresh)');
     button.innerHTML = originalText;
     button.disabled = false;
   }
 }
-
-// Debug function to check cache status
-async function debugCacheStatus() {
-  const versionInfo = document.getElementById('version-info');
-  if (versionInfo) {
-    versionInfo.style.background = '#ffeb3b';
-    versionInfo.style.color = '#000';
-    versionInfo.style.padding = '5px';
-    versionInfo.style.borderRadius = '3px';
-    setTimeout(() => {
-      versionInfo.style = '';
-    }, 3000);
-  }
-}
-
-window.debugCacheStatus = debugCacheStatus;
-window.clearAppCache = clearAppCache;
 </script>
 </body>
 </html>
