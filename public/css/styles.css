@@ -1,0 +1,745 @@
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f4f4f9;
+  font-family: 'Helvetica', sans-serif;
+}
+
+.navbar {
+  background-color: #00b383;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 10px;
+}
+
+.navbar .navbar-brand {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.navbar .nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.navbar .nav-links a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+  text-transform: uppercase;
+}
+
+.navbar .nav-links a:hover {
+  background-color: white;
+  color: #004d2e;
+}
+
+.navbar .nav-links a.active {
+  font-weight: bold;
+  background-color: #004d2e;
+  color: white;
+}
+
+.navbar .btn-logout {
+  background-color: #d9534f;
+  border: none;
+}
+
+.main-app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 60px;
+  width: 100%;
+}
+
+/* Footer */
+footer {
+  background-color: #00b383;
+  color: white;
+  text-align: center;
+  padding: 10px 15px;
+  font-size: 14px;
+  width: 100%;
+  position: relative;
+  margin-top: auto;
+  line-height: 1.5;
+}
+
+footer a {
+  color: white;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* Version info styling */
+#version-info {
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+#version-info:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  opacity: 1 !important;
+  transform: scale(1.05);
+}
+
+.page {
+  display: none;
+  padding: 20px;
+  width: 100%;
+}
+
+.page.active {
+  display: block;
+}
+
+.page-container {
+  position: relative;
+}
+
+/* Nút toggle - ẩn trên desktop */
+.toc-toggle-btn {
+  display: none; /* Ẩn mặc định trên desktop */
+  position: fixed;
+  top: auto; /* Dưới navbar */
+  bottom: 80px;
+  left: 15px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #00b383, #007a61);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 25px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 179, 131, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.toc-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 179, 131, 0.4);
+  background: linear-gradient(135deg, #007a61, #00b383);
+}
+
+.toc-toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 179, 131, 0.3);
+}
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Màu đen mờ với độ trong suốt 50% */
+  z-index: 998; /* Nằm dưới thanh mục lục (z-index: 999) nhưng trên nội dung */
+  display: none; /* Ẩn mặc định */
+  transition: opacity 0.3s ease; /* Hiệu ứng mờ dần */
+}
+
+/* Khi thanh mục lục active, hiển thị overlay */
+.toc-container.active + .overlay {
+  display: block;
+}
+
+/* Thanh mục lục chung */
+.toc-container {
+  background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+  z-index: 999;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.15);
+  border-right: 3px solid #00b383;
+}
+
+#login-screen {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f4f4f9;
+}
+
+.login-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.login-container h2 {
+  color: #00b383;
+  margin-bottom: 20px;
+}
+
+.login-container .form-control {
+  width: 300px;
+  margin: 10px auto;
+}
+
+.login-container button {
+  width: 300px;
+  margin-top: 10px;
+}
+
+#login-error {
+  color: red;
+  margin-top: 10px;
+  display: none; /* Ẩn mặc định */
+}
+
+#spinner {
+  display: block; /* Hiện spinner khi load trang */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: #00b383;
+}
+
+.search-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: white;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.search-section h2 {
+  margin: 0;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.search-section input {
+  flex-grow: 1;
+}
+
+#search {
+  transition: all 0.3s ease-in-out;
+  border: 1px solid #ddd;
+}
+
+#search:focus {
+  border-color: #00b383;
+  box-shadow: 0 0 8px rgba(0, 179, 131, 0.5);
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  display: none;
+  border-radius: 0 0 5px 5px;
+}
+
+.search-results .result-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 16px;
+  color: #333;
+}
+
+.search-results .result-item:hover {
+  background-color: #e6f3ff;
+}
+
+.search-results .result-item:last-child {
+  border-bottom: none; /* Bỏ viền dưới cho mục cuối cùng */
+}
+
+.results-section {
+  background: #fff;
+  padding: 10px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: 75vh;
+  overflow-y: auto;
+}
+
+.results-section h3 {
+  border-bottom: 2px solid #00b383;
+  padding-bottom: 10px;
+}
+
+.results-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.results-section li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #ddd;
+  transition: all 0.3s ease-in-out;
+}
+
+.results-section li:hover {
+  background-color: #e0ffe0;
+  transform: scale(1.05);
+}
+
+.details-section {
+  background: #fff;
+  padding: 10px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: 75vh;
+  overflow-y: auto;
+}
+
+.details-section h3 {
+  border-bottom: 2px solid #00b383;
+  padding-bottom: 10px;
+}
+
+.details-section div[id^="section-"] {
+  padding: 10px;
+  margin-bottom: 10px;
+  text-align: justify;
+}
+
+.details-section div[id^="section-"] h4 {
+  color: #00b383;
+  margin: 0;
+}
+
+.details-item.highlight h4::before {
+  content: "➤";
+  color: #00b383;
+  margin-right: 10px;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.accordion {
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.accordion-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border: none;
+  text-align: left;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.accordion-button:hover {
+  background-color: #ddd;
+}
+
+.accordion-button[aria-expanded="true"] {
+  color: #000;
+  font-weight: bold;
+}
+
+.accordion-content {
+  padding: 10px;
+  display: none;
+  background-color: #f9f9f9;
+}
+
+.modal-header {
+  background-color: #00b383;
+  color: white;
+}
+
+.modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transform: translateY(-30px); /* Bắt đầu từ trên cao */
+  opacity: 0; /* Bắt đầu ẩn */
+}
+
+.modal.show .modal-dialog {
+  transform: translateY(0); /* Trở về vị trí ban đầu */
+  opacity: 1; /* Hiển thị đầy đủ */
+}
+
+.age-dosage-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.age-dosage-table th, .age-dosage-table td {
+  padding: 8px; /* Giảm padding */
+  text-align: left;
+  border: 1px solid #ddd;
+  vertical-align: top;
+  line-height: 1.4; /* Giảm line-height */
+}
+
+.age-dosage-table th {
+  background-color: #f4f4f9;
+  color: #333;
+  text-align: center;
+}
+
+.age-dosage-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.age-dosage-table tr:hover {
+  background-color: #e9f5e9;
+}
+
+.tools-container {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.tools-sidebar {
+  background-color: #ffffff;
+  padding: 8px; /* Giảm padding */
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: 85vh;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.tools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px; /* Giảm margin-bottom */
+  width: 100%;
+  border-bottom: 2px solid #00b383;
+}
+
+.tools-sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tools-sidebar li {
+  padding: 8px; /* Giảm padding */
+  cursor: pointer;
+  border-bottom: 1px solid #ddd;
+  transition: all 0.3s ease-in-out;
+}
+
+.tools-sidebar li:hover {
+  background-color: #e0ffe0;
+  transform: scale(1.05);
+}
+
+.tools-content {
+  background: #fff;
+  padding: 15px; /* Giảm padding */
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: 75vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tools-content h3 {
+  border-bottom: 2px solid #00b383;
+  padding-bottom: 8px; /* Giảm padding-bottom */
+  margin-bottom: 10px; /* Thêm margin-bottom nhỏ */
+}
+
+.tool-form {
+  width: 100%;
+  max-width: 800px;
+  padding: 15px; /* Giảm padding */
+}
+
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px; /* Giảm margin-bottom */
+}
+
+.form-label {
+  font-style: bold;
+  flex: 1;
+  margin-right: 10px;
+  text-align: left;
+}
+
+.form-control,
+.form-select {
+  flex: 2;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.form-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}
+
+/* Sticky drug name header */
+#drug-name {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #00b383, #007a61);
+  color: white;
+  margin: 0;
+  padding: 15px 20px;
+  z-index: 100;
+  border-radius: 0;
+  border-bottom: none;
+  box-shadow: 0 2px 10px rgba(0, 179, 131, 0.3);
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+#drug-name::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 2px;
+}
+
+.details-section {
+  background: #fff;
+  padding: 0; /* Bỏ padding để sticky header full width */
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  height: 75vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Container cho nội dung cuộn */
+.details-content {
+  flex: 1;
+  padding: 10px; /* Padding cho nội dung */
+  overflow-y: auto;
+}
+
+/* Đảm bảo scroll dừng lại ở vị trí phù hợp dưới sticky header */
+.details-content .details-item {
+  scroll-margin-top: 80px; /* Khoảng cách từ sticky header */
+}
+
+/* Đảm bảo section header không bị che khuất */
+.details-content h4 {
+  scroll-margin-top: 80px;
+  padding-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    padding: 8px 10px; /* Giảm padding navbar */
+  }
+  .tools-content {
+    width: 100%;
+    height: auto;
+  }
+  /* Hiện nút toggle trên mobile */
+  .toc-toggle-btn {
+    display: block;
+    bottom: 80px;
+    left: 15px;
+  }
+
+  /* Thanh mục lục trên mobile */
+  .toc-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px; /* Giữ chiều rộng cố định trên mobile */
+    height: 100%;
+    transform: translateX(-100%);
+  }
+
+  /* Khi active thì kéo vào */
+  .toc-container.active {
+    transform: translateX(0);
+  }
+
+  /* Mobile sticky drug name adjustments - fix overlap */
+  #drug-name {
+    position: sticky;
+    top: 0;
+    margin: 0;
+    padding: 10px 15px; /* Giảm padding */
+    font-size: 17px; /* Giảm font size */
+    text-align: center;
+  }
+
+  /* Điều chỉnh phần nội dung chính */
+  .col-md-8 {
+    width: 100%;
+    padding-top: 50px; /* Giảm padding-top */
+  }
+
+  /* Đảm bảo nội dung không bị che bởi navbar */
+  .page.active {
+    padding-top: 50px; /* Giảm padding-top */
+  }
+
+  /* Điều chỉnh search-section trên mobile */
+  .search-section {
+    position: relative;
+    z-index: 998;
+    flex-direction: column;
+    padding: 8px 10px; /* Giảm padding */
+    margin-bottom: 8px; /* Giảm margin-bottom */
+  }
+  .search-section h2 {
+    font-size: 16px; /* Giảm font size */
+    margin-bottom: 8px; /* Giảm margin */
+  }
+  .search-section input {
+    width: 100%;
+    flex-grow: 1;
+    padding: 6px 8px; /* Giảm padding */
+    box-sizing: border-box;
+  }
+  .search-results {
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
+  .details-section {
+    margin-top: 0;
+    padding: 0; /* Consistent với desktop */
+    background: #fff;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    height: 75vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Mobile details content */
+  .details-content {
+    flex: 1;
+    padding: 8px; /* Giảm padding */
+    overflow-y: auto;
+  }
+  
+  /* Mobile scroll margin adjustments */
+  .details-content .details-item {
+    scroll-margin-top: 60px; /* Giảm khoảng cách */
+  }
+  
+  .details-content h4 {
+    scroll-margin-top: 60px; /* Giảm khoảng cách */
+    padding-top: 6px; /* Giảm padding-top */
+    margin-bottom: 6px; /* Giảm margin-bottom */
+    font-size: 16px; /* Giảm font size */
+  }
+  .details-content p,
+  .details-content ul {
+    margin-bottom: 8px; /* Giảm margin */
+    font-size: 14px;
+  }
+  .details-content .row {
+    margin-bottom: 8px; /* Giảm margin */
+  }
+  
+  #tools-page .tools-content {
+    margin-top: 8px; /* Giảm margin-top */
+  }
+  #drug-info .row.mt-4 {
+    margin-top: 8px !important; /* Giảm margin-top */
+  }
+  
+  /* Mobile footer version styling */
+  #version-info {
+    font-size: 11px !important;
+    display: block;
+    margin-top: 6px; /* Giảm margin-top */
+  }
+  
+  footer {
+    padding: 8px 10px; /* Giảm padding */
+    font-size: 13px;
+  }
+}
+
+/* Desktop: luôn hiển thị */
+@media (min-width: 769px) {
+  .toc-container {
+    position: relative; /* Không cần fixed trên desktop */
+    height: auto; /* Không cần full height trên desktop */
+    transform: translateX(0); /* Luôn hiển thị */
+    box-shadow: none; /* Tùy chọn: bỏ shadow nếu muốn */
+  }
+  #drug-info .search-section,
+  #drug-info .row.mt-4 {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #tools-page .tools-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 0;
+  }
+  #tools-page .tools-content {
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    width: 100%;
+  }
+  .search-results {
+    left: 15px;
+    right: 15px;
+    width: auto;
+  }
+}
