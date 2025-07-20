@@ -1,5 +1,5 @@
-// Service Worker for aggressive cache busting
-const CACHE_NAME = 'pedmed-v1.6-20250718024500'; // New version with timestamp
+// Service Worker for caching
+const CACHE_NAME = 'pedmed-v1.7-20250719'; // Force cache clear with new timestamp
 const urlsToCache = [
   '/',
   '/index.html',
@@ -15,7 +15,6 @@ const urlsToCache = [
 
 // List of old cache versions to delete
 const OLD_CACHES = [
-  'pedmed-v1.5-20250718',
   'pedmed-v1.4-20250718',
   'pedmed-v1.3',
   'pedmed-v1.2', 
@@ -25,11 +24,11 @@ const OLD_CACHES = [
 
 // Install event
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker installing...');
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('📦 Caching app shell');
+
         return cache.addAll(urlsToCache);
       })
       .catch(error => {
@@ -41,7 +40,7 @@ self.addEventListener('install', event => {
 
 // Activate event
 self.addEventListener('activate', event => {
-  console.log('✅ Service Worker activated');
+
   event.waitUntil(
     Promise.all([
       // Delete old caches
@@ -49,7 +48,7 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME || OLD_CACHES.includes(cacheName)) {
-              console.log('🗑️ Deleting old cache:', cacheName);
+
               return caches.delete(cacheName);
             }
           })
@@ -67,13 +66,13 @@ self.addEventListener('fetch', event => {
   
   // Skip unsupported schemes (chrome-extension, moz-extension, etc.)
   if (!url.protocol.startsWith('http')) {
-    console.log('🚫 Skipping unsupported scheme:', url.protocol);
+
     return;
   }
   
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
-    console.log('🚫 Skipping non-GET request:', event.request.method);
+
     return;
   }
   
@@ -150,7 +149,7 @@ self.addEventListener('fetch', event => {
 // Background sync for offline actions
 self.addEventListener('sync', event => {
   if (event.tag === 'background-sync') {
-    console.log('🔄 Background sync triggered');
+
     // Handle offline actions here
   }
 });

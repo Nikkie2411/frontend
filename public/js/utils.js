@@ -1,7 +1,7 @@
 // Tự động detect môi trường
 const BACKEND_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:3000' 
-  : 'https://pedmedvn.onrender.com'; // URL Render mới
+  : 'https://pedmedvn.onrender.com'; // Backend Render URL
 
 // Performance optimizations
 const cache = new Map();
@@ -11,12 +11,12 @@ let isOnline = navigator.onLine;
 // Network status monitoring
 window.addEventListener('online', () => {
   isOnline = true;
-  console.log('🌐 Network connection restored');
+
 });
 
 window.addEventListener('offline', () => {
   isOnline = false;
-  console.log('📶 Network connection lost');
+
 });
 
 // Optimized fetch with caching and retry logic
@@ -25,7 +25,7 @@ async function optimizedFetch(url, options = {}, cacheKey = null, cacheDuration 
   if (cacheKey && cache.has(cacheKey)) {
     const cached = cache.get(cacheKey);
     if (Date.now() - cached.timestamp < cacheDuration) {
-      console.log(`📦 Cache hit: ${cacheKey}`);
+
       return { success: true, data: cached.data, fromCache: true };
     }
     cache.delete(cacheKey);
@@ -33,7 +33,7 @@ async function optimizedFetch(url, options = {}, cacheKey = null, cacheDuration 
 
   // Check for duplicate requests
   if (requestCache.has(url)) {
-    console.log(`⏳ Request in progress: ${url}`);
+
     return requestCache.get(url);
   }
 
@@ -54,7 +54,19 @@ async function optimizedFetch(url, options = {}, cacheKey = null, cacheDuration 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Try to get error message from response body
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // If we can't parse JSON, use default error message
+        }
+        return { success: false, error: errorMessage, status: response.status };
       }
 
       const data = await response.json();
@@ -62,7 +74,7 @@ async function optimizedFetch(url, options = {}, cacheKey = null, cacheDuration 
       // Cache successful responses
       if (cacheKey && response.ok) {
         cache.set(cacheKey, { data, timestamp: Date.now() });
-        console.log(`💾 Cached: ${cacheKey}`);
+
       }
 
       return { success: true, data, fromCache: false };
@@ -87,28 +99,28 @@ function connectWebSocket(username, deviceId, maxRetries = 5) {
   
   // Close existing connection if any
   if (window.ws && window.ws.readyState === WebSocket.OPEN) {
-    console.log('🔌 Closing existing WebSocket connection');
+
     window.ws.close();
   }
 
   const wsUrl = `${BACKEND_URL.replace('http', 'ws')}/?username=${encodeURIComponent(username)}&deviceId=${encodeURIComponent(deviceId)}`;
-  console.log('🔗 Attempting WebSocket connection to:', wsUrl);
+
 
   function attemptConnection() {
     try {
       window.ws = new WebSocket(wsUrl);
 
       window.ws.onopen = () => {
-        console.log(`✅ WebSocket connected for ${username}_${deviceId.substring(0, 8)}***`);
+
         retries = 0; // Reset retries on success
       };
 
       window.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("📩 WebSocket message:", data);
+
           if (data.action === "logout") {
-            console.log("⚠️ Received logout signal:", data.message);
+
             logout(true);
           }
         } catch (error) {
@@ -117,11 +129,11 @@ function connectWebSocket(username, deviceId, maxRetries = 5) {
       };
 
       window.ws.onclose = (event) => {
-        console.log(`🔌 WebSocket disconnected (code: ${event.code}, reason: ${event.reason})`);
+
         
         // Only retry if not intentionally closed and user is still logged in
         if (event.code !== 1000 && retries < maxRetries && localStorage.getItem("isLoggedIn") === "true") {
-          console.log(`� Retrying WebSocket connection (${retries + 1}/${maxRetries})...`);
+
           const delay = Math.min(5000 * Math.pow(2, retries), 30000); // Exponential backoff, max 30s
           setTimeout(attemptConnection, delay);
           retries++;
@@ -202,8 +214,17 @@ async function getDeviceId() {
     return new Promise((resolve) => {
       setTimeout(async () => {
         try {
-          // Chỉ sử dụng 3 thông tin cơ bản nhất và ổn định nhất
-          // để đảm bảo tính nhất quán tuyệt đối giữa browsers
+          // IMPROVED: Sử dụng localStorage để đảm bảo tính nhất quán
+          let storedDeviceId = localStorage.getItem('device_fingerprint');
+          
+          if (storedDeviceId) {
+            console.log('📱 Using stored device ID:', storedDeviceId);
+            resolve({ deviceId: storedDeviceId, deviceName: getDeviceName() });
+            return;
+          }
+          
+          // Tạo device ID mới chỉ khi chưa có
+          // Sử dụng nhiều thông số ổn định hơn để tạo fingerprint
           
           // Platform info - chuẩn hóa
           let platformInfo = navigator.platform.toLowerCase();
@@ -213,26 +234,37 @@ async function getDeviceId() {
           else if (platformInfo.includes('android')) platformInfo = 'android';
           else if (platformInfo.includes('iphone') || platformInfo.includes('ipad')) platformInfo = 'ios';
           
-          // Chỉ sử dụng 3 thông tin cơ bản nhất:
-          // 1. Screen width
-          // 2. Screen height  
-          // 3. Platform (normalized)
-          const ultraSimpleSignature = [
+          // User Agent hash - ổn định trong cùng browser
+          let uaHash = 0;
+          const ua = navigator.userAgent;
+          for (let i = 0; i < ua.length; i++) {
+            uaHash = ((uaHash << 5) - uaHash) + ua.charCodeAt(i);
+            uaHash = uaHash & uaHash;
+          }
+          
+          // Tạo signature từ nhiều thông số ổn định
+          const stableSignature = [
             screen.width,
             screen.height,
-            platformInfo
+            platformInfo,
+            Math.abs(uaHash).toString(36).slice(0, 6), // UA hash ngắn gọn
+            screen.colorDepth || 24,
+            new Date().getTimezoneOffset() // Timezone offset
           ].join('|');
           
-          console.log('🔧 Ultra-simple signature:', {
+          console.log('🔐 Device fingerprint components:', {
             screen: `${screen.width}x${screen.height}`,
             platform: platformInfo,
-            signature: ultraSimpleSignature
+            uaHash: Math.abs(uaHash).toString(36).slice(0, 6),
+            colorDepth: screen.colorDepth || 24,
+            timezone: new Date().getTimezoneOffset(),
+            signature: stableSignature
           });
           
-          // Tạo hash đơn giản
+          // Tạo hash ổn định
           let hash = 0;
-          for (let i = 0; i < ultraSimpleSignature.length; i++) {
-            const char = ultraSimpleSignature.charCodeAt(i);
+          for (let i = 0; i < stableSignature.length; i++) {
+            const char = stableSignature.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
             hash = hash & hash; // Convert to 32-bit integer
           }
@@ -241,28 +273,39 @@ async function getDeviceId() {
           const deviceId = Math.abs(hash).toString(36).padStart(8, '0').slice(0, 8);
           const deviceName = getDeviceName();
           
+          // Lưu vào localStorage để đảm bảo tính nhất quán
+          localStorage.setItem('device_fingerprint', deviceId);
+          console.log('💾 Stored new device ID:', deviceId);
+          
           resolve({ deviceId, deviceName });
           
         } catch (error) {
           console.error('❌ Error generating device ID:', error);
-          // Fallback chỉ dùng screen resolution
+          // Fallback với localStorage backup
           try {
-            const screenSignature = `${screen.width}x${screen.height}`;
-            let fallbackHash = 0;
-            for (let i = 0; i < screenSignature.length; i++) {
-              const char = screenSignature.charCodeAt(i);
-              fallbackHash = ((fallbackHash << 5) - fallbackHash) + char;
-              fallbackHash = fallbackHash & fallbackHash;
-            }
+            let fallbackId = localStorage.getItem('device_fingerprint_backup');
             
-            const fallbackId = Math.abs(fallbackHash).toString(36).padStart(8, '0').slice(0, 8);
-            console.log(`🔄 Using screen-only fallback: ${fallbackId}`);
+            if (!fallbackId) {
+              const screenSignature = `${screen.width}x${screen.height}x${Date.now()}`;
+              let fallbackHash = 0;
+              for (let i = 0; i < screenSignature.length; i++) {
+                const char = screenSignature.charCodeAt(i);
+                fallbackHash = ((fallbackHash << 5) - fallbackHash) + char;
+                fallbackHash = fallbackHash & fallbackHash;
+              }
+              
+              fallbackId = Math.abs(fallbackHash).toString(36).padStart(8, '0').slice(0, 8);
+              localStorage.setItem('device_fingerprint_backup', fallbackId);
+              localStorage.setItem('device_fingerprint', fallbackId);
+            }
+
             resolve({ deviceId: fallbackId, deviceName: getDeviceName() });
             
           } catch (fallbackError) {
             console.error('❌ Even fallback failed:', fallbackError);
-            // Emergency fallback
-            const emergencyId = (screen.width * screen.height).toString(36).padStart(8, '0').slice(0, 8);
+            // Emergency fallback với timestamp
+            const emergencyId = (Date.now() % 1000000).toString(36).padStart(8, '0').slice(0, 8);
+            localStorage.setItem('device_fingerprint', emergencyId);
             resolve({ deviceId: emergencyId, deviceName: getDeviceName() });
           }
         }
@@ -315,3 +358,188 @@ function getDeviceName() {
     // Fallback
     return `${navigator.platform} Device`;
   }
+
+// UI Helper Functions
+function showSpinner() {
+    const spinner = document.getElementById('loading-spinner');
+    if (spinner) {
+        spinner.style.display = 'flex';
+    } else {
+        // Create spinner if it doesn't exist
+        createLoadingSpinner();
+    }
+}
+
+function hideSpinner() {
+    const spinner = document.getElementById('loading-spinner');
+    if (spinner) {
+        spinner.style.display = 'none';
+    }
+}
+
+function createLoadingSpinner() {
+    // Check if spinner already exists
+    if (document.getElementById('loading-spinner')) return;
+    
+    const spinner = document.createElement('div');
+    spinner.id = 'loading-spinner';
+    spinner.innerHTML = `
+        <div class="spinner-overlay">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <div class="spinner-text">Đang tải...</div>
+            </div>
+        </div>
+    `;
+    
+    // Add spinner styles
+    spinner.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    
+    const spinnerContainer = spinner.querySelector('.spinner-container');
+    if (spinnerContainer) {
+        spinnerContainer.style.cssText = `
+            text-align: center;
+            color: white;
+        `;
+    }
+    
+    const spinnerElement = spinner.querySelector('.spinner');
+    if (spinnerElement) {
+        spinnerElement.style.cssText = `
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #00b383;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        `;
+    }
+    
+    // Add CSS animation
+    if (!document.getElementById('spinner-styles')) {
+        const style = document.createElement('style');
+        style.id = 'spinner-styles';
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(spinner);
+}
+
+// Performance monitoring utilities
+const performanceMonitor = {
+    // Log performance metrics
+    logPerformance: function(operation, startTime) {
+        if (typeof startTime === 'number') {
+            const duration = performance.now() - startTime;
+
+            
+            // Store performance data (optional)
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    const perfData = JSON.parse(localStorage.getItem('perfMetrics') || '[]');
+                    perfData.push({
+                        operation,
+                        duration,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // Keep only last 50 metrics
+                    if (perfData.length > 50) {
+                        perfData.splice(0, perfData.length - 50);
+                    }
+                    
+                    localStorage.setItem('perfMetrics', JSON.stringify(perfData));
+                } catch (error) {
+                    console.warn('⚠️ Could not store performance metrics:', error);
+                }
+            }
+        }
+    },
+    
+    // Debounce function for performance optimization
+    debounce: function(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+    
+    // Throttle function for performance optimization
+    throttle: function(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    },
+    
+    // Get performance metrics from localStorage
+    getMetrics: function() {
+        try {
+            return JSON.parse(localStorage.getItem('perfMetrics') || '[]');
+        } catch (error) {
+            console.warn('⚠️ Could not retrieve performance metrics:', error);
+            return [];
+        }
+    },
+    
+    // Clear performance metrics
+    clearMetrics: function() {
+        try {
+            localStorage.removeItem('perfMetrics');
+
+        } catch (error) {
+            console.warn('⚠️ Could not clear performance metrics:', error);
+        }
+    }
+};
+
+// Export functions for global use
+window.optimizedFetch = optimizedFetch;
+window.connectWebSocket = connectWebSocket;
+window.getDeviceId = getDeviceId;
+
+// Admin utility functions - chỉ dùng khi cần thiết
+window.resetDeviceId = function() {
+  localStorage.removeItem('device_fingerprint');
+  localStorage.removeItem('device_fingerprint_backup');
+  console.log('🔄 Device ID reset. Please refresh the page.');
+  return 'Device ID đã được reset. Vui lòng tải lại trang.';
+};
+
+window.showCurrentDeviceId = async function() {
+  const { deviceId, deviceName } = await getDeviceId();
+  console.log('📱 Current Device Info:', { deviceId, deviceName });
+  return { deviceId, deviceName };
+};
+window.performanceMonitor = performanceMonitor;
+window.showSpinner = showSpinner;
+window.hideSpinner = hideSpinner;

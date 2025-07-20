@@ -9,7 +9,7 @@
   <!-- PWA Support -->
   <meta name="theme-color" content="#00b383">
   <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="PedMed VNCH">
   
@@ -24,7 +24,7 @@
   <meta name="cache-bust" content="202507180200">
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=12&bust=202507190900">
+  <link rel="stylesheet" href="/css/styles.css?v=11&bust=202507180200">
 </head>
 <body>
   <!-- Login Screen -->
@@ -103,28 +103,8 @@
           </div>
           <div id="reset-password-form" style="display: none;">
             <input type="password" id="new-password" class="form-control mt-2" placeholder="Nhập mật khẩu mới">
-            <input type="password" id="confirm-password" class="form-control mt-2" placeholder="Nhập lại mật khẩu mới">
             <button class="btn btn-success w-100 mt-2" onclick="resetPassword()">Đổi mật khẩu</button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Device Selection Modal -->
-  <div class="modal fade" id="deviceSelectionModal" tabindex="-1" aria-labelledby="deviceSelectionModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Chọn thiết bị để đăng xuất</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>Tài khoản đã đăng nhập trên 2 thiết bị. Chọn thiết bị để đăng xuất:</p>
-          <div id="device-list"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
         </div>
       </div>
     </div>
@@ -137,13 +117,13 @@
     <nav class="navbar">
       <img src="https://i.imgur.com/yT89ZWJ.png" class="navbar-logo">
       <div class="nav-links">
-        <a href="#" class="nav-link active" data-page="drug-info" onclick="simpleSwitchPage('drug-info'); return false;">Thuốc</a>
+        <a href="#" class="nav-link active" data-page="drug-info" onclick="simpleSwitchPage('drug-info'); return false;">Tra cứu</a>
         <a href="#" class="nav-link" data-page="tools-page" onclick="simpleSwitchPage('tools-page'); return false;">Công cụ</a>
       </div>
       <button class="btn btn-danger btn-logout" onclick="logout()">Đăng xuất</button>
     </nav>
 
-    <!-- Pages Thuốc-->
+    <!-- Pages Tra cứu-->
     <div id="drug-info" class="page active">
     <!-- Nội dung trang Thông tin thuốc -->
     <!-- Nút toggle cho mobile -->
@@ -289,13 +269,10 @@
   
         <!-- Phần hiển thị nội dung công cụ -->
         <div class="tools-content" style="display: none;">
-          <!-- Container for dynamic calculators -->
-          <div class="calculator-container"></div>
-          
           <!-- Tool 1: Tính eGFR-->
           <div id="egfr-tool" style="display: none;">
             <h3>Tính mức lọc cầu thận (eGFR) - Công thức Schwartz</h3>
-            <form class="tool-form" onsubmit="return calculateEGFR(event)">
+            <form class="tool-form" onsubmit="calculateEGFR(event)">
               <div class="form-group">
                 <label for="dob" class="form-label">Ngày sinh:</label>
                 <input type="date" id="dob" class="form-control">
@@ -324,16 +301,16 @@
                   <input type="number" id="creatinine" class="form-control" step="0.1">
               </div>
   
-              <button type="button" class="btn btn-success w-100" onclick="calculateEGFR()">Tính eGFR</button>
+              <button class="btn btn-success w-100" onclick="calculateEGFR()">Tính eGFR</button>
      
               <h4 class="text-danger mt-3" style="color: #d9534f;">Kết quả: <span id="egfr-result"></span></h4>
             </form>
             </div>
   
-      <!-- Tool 2: Tính BSA-->
+      <!-- Tool 2: Tính BSI-->
       <div id="bsa-tool" style="display: none;">
         <h3>Tính diện tích bề mặt da (BSA) - Công thức Mosteller</h3>
-        <form class="tool-form" onsubmit="return calculateBSA(event)">
+        <form class="tool-form" onsubmit="calculateBSA(event)">
           <div class="form-group">
             <label for="bsa-height" class="form-label">Chiều cao (cm):</label>
             <input type="number" id="bsa-height" class="form-control" step="0.1">
@@ -344,7 +321,7 @@
             <input type="number" id="bsa-weight" class="form-control" step="0.1">
           </div>
   
-          <button type="button" onclick="calculateBSA()" class="btn btn-success w-100">Tính BSA</button>
+          <button onclick="calculateBSA()" class="btn btn-success w-100">Tính BSA</button>
           <h4 class="text-danger mt-3" style="color: #d9534f;">Kết quả: <span id="bsa-result"></span></h4>
      
       </form>
@@ -381,218 +358,16 @@
 </footer>
 
 <!-- Your JS files -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/utils.js?v=12&bust=202507190900"></script>
-<script src="/js/auth.js?v=12&bust=202507190900"></script>
-<script src="/js/drugSearch.js?v=12&bust=202507190900"></script>
-<script src="/js/tools.js?v=12&bust=202507190900"></script>
-<script>
-// Immediately after tools.js loads, ensure functions are available
-console.log('🔧 Immediately checking tools.js functions...');
-if (typeof calculateEGFR === 'function') {
-  window.calculateEGFR = calculateEGFR;
-  console.log('✅ calculateEGFR bound to window immediately');
-} else {
-  console.warn('⚠️ calculateEGFR not found immediately after tools.js load');
-}
-
-if (typeof calculateBSA === 'function') {
-  window.calculateBSA = calculateBSA;
-  console.log('✅ calculateBSA bound to window immediately');
-} else {
-  console.warn('⚠️ calculateBSA not found immediately after tools.js load');
-}
-</script>
-<script src="/js/ui.js?v=12&bust=202507190900"></script>
-
-<!-- FALLBACK CALCULATOR FUNCTIONS - Ensure they always exist -->
-<script>
-// Define fallback calculator functions if not loaded from tools.js
-if (typeof window.calculateEGFR !== 'function') {
-  console.log('🔧 Creating fallback calculateEGFR function');
-  window.calculateEGFR = function(event) {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    console.log('🧮 Fallback calculateEGFR called');
-    
-    const dob = document.getElementById('dob')?.value;
-    const gender = document.getElementById('gender')?.value;
-    const premature = document.getElementById('premature')?.checked;
-    const height = parseFloat(document.getElementById('height')?.value);
-    const creatinine = parseFloat(document.getElementById('creatinine')?.value);
-    const resultElement = document.getElementById('egfr-result');
-    
-    if (!dob || !height || !creatinine || !resultElement) {
-      if (resultElement) {
-        resultElement.textContent = 'Vui lòng nhập đầy đủ thông tin';
-        resultElement.style.color = '#d9534f';
-      }
-      return false;
-    }
-    
-    try {
-      // Calculate age in years
-      const birthDate = new Date(dob);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      // Convert creatinine from µmol/L to mg/dL
-      const creatinineInMgDl = creatinine * 0.0113;
-      
-      // Schwartz formula: eGFR = k × height(cm) / creatinine(mg/dL)
-      let k;
-      if (age < 1) {
-        k = premature ? 0.33 : 0.45;
-      } else if (age < 13) {
-        k = 0.55;
-      } else {
-        k = gender === 'male' ? 0.70 : 0.55;
-      }
-      
-      const egfr = (k * height) / creatinineInMgDl;
-      
-      resultElement.textContent = `${egfr.toFixed(1)} mL/min/1.73m²`;
-      
-      // Color coding based on result
-      if (egfr >= 90) {
-        resultElement.style.color = '#28a745'; // Green - normal
-      } else if (egfr >= 60) {
-        resultElement.style.color = '#ffc107'; // Yellow - mild decrease
-      } else if (egfr >= 30) {
-        resultElement.style.color = '#fd7e14'; // Orange - moderate decrease
-      } else {
-        resultElement.style.color = '#dc3545'; // Red - severe decrease
-      }
-      
-    } catch (error) {
-      console.error('Error calculating eGFR:', error);
-      resultElement.textContent = 'Lỗi tính toán';
-      resultElement.style.color = '#d9534f';
-    }
-    
-    return false;
-  };
-}
-
-if (typeof window.calculateBSA !== 'function') {
-  console.log('🔧 Creating fallback calculateBSA function');
-  window.calculateBSA = function(event) {
-    if (event) {
-      event.preventDefault();
-    }
-    
-    console.log('🧮 Fallback calculateBSA called');
-    
-    const height = parseFloat(document.getElementById('bsa-height')?.value);
-    const weight = parseFloat(document.getElementById('bsa-weight')?.value);
-    const resultElement = document.getElementById('bsa-result');
-    
-    if (!height || !weight || !resultElement) {
-      if (resultElement) {
-        resultElement.textContent = 'Vui lòng nhập chiều cao và cân nặng';
-        resultElement.style.color = '#d9534f';
-      }
-      return false;
-    }
-    
-    try {
-      // Mosteller formula: BSA = √[(height(cm) × weight(kg)) / 3600]
-      const bsa = Math.sqrt((height * weight) / 3600);
-      
-      resultElement.textContent = `${bsa.toFixed(2)} m²`;
-      resultElement.style.color = '#28a745';
-      
-    } catch (error) {
-      console.error('Error calculating BSA:', error);
-      resultElement.textContent = 'Lỗi tính toán';
-      resultElement.style.color = '#d9534f';
-    }
-    
-    return false;
-  };
-}
-
-// Make sure global functions are available
-window.calculateEGFR = window.calculateEGFR;
-window.calculateBSA = window.calculateBSA;
-
-console.log('✅ Calculator functions finalized:', {
-  'calculateEGFR': typeof calculateEGFR,
-  'calculateBSA': typeof calculateBSA,
-  'window.calculateEGFR': typeof window.calculateEGFR,
-  'window.calculateBSA': typeof window.calculateBSA
-});
-</script>
-
-<!-- Ensure calculator functions are available -->
-<script>
-// Wait for DOM and all scripts to load
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, checking calculator functions...');
-  
-  // Verify functions are available
-  if (typeof window.calculateEGFR !== 'function') {
-    console.error('calculateEGFR function not available on window');
-  } else {
-    console.log('✅ calculateEGFR function is available');
-  }
-  
-  if (typeof window.calculateBSA !== 'function') {
-    console.error('calculateBSA function not available on window');
-  } else {
-    console.log('✅ calculateBSA function is available');
-  }
-  
-  // Force bind functions to global scope with multiple attempts
-  const ensureFunctions = () => {
-    if (typeof calculateEGFR === 'function') {
-      window.calculateEGFR = calculateEGFR;
-      console.log('✅ Bound calculateEGFR to window');
-    }
-    if (typeof calculateBSA === 'function') {
-      window.calculateBSA = calculateBSA;
-      console.log('✅ Bound calculateBSA to window');
-    }
-  };
-  
-  // Try immediately
-  ensureFunctions();
-  
-  // Try after short delay
-  setTimeout(ensureFunctions, 100);
-  
-  // Try after longer delay
-  setTimeout(ensureFunctions, 500);
-});
-
-// Also try when window loads
-window.addEventListener('load', function() {
-  console.log('Window loaded, final check...');
-  if (typeof window.calculateEGFR === 'function') {
-    console.log('✅ calculateEGFR available after window load');
-  } else {
-    console.error('❌ calculateEGFR still not available after window load');
-  }
-  
-  if (typeof window.calculateBSA === 'function') {
-    console.log('✅ calculateBSA available after window load');
-  } else {
-    console.error('❌ calculateBSA still not available after window load');
-  }
-});
-</script>
+<script src="/js/utils.js?v=11&bust=202507180200"></script>
+<script src="/js/auth.js?v=11&bust=202507180200"></script>
+<script src="/js/drugSearch.js?v=11&bust=202507180200"></script>
+<script src="/js/tools.js?v=11&bust=202507180200"></script>
+<script src="/js/ui.js?v=11&bust=202507180200"></script>
 
 <!-- Service Worker Registration -->
 <script>
 // Force version check and update
-const CURRENT_VERSION = '12';
+const CURRENT_VERSION = '11';
 const LAST_VERSION = localStorage.getItem('app_version');
 
 if (LAST_VERSION && LAST_VERSION !== CURRENT_VERSION) {

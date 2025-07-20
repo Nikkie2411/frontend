@@ -26,11 +26,13 @@ const Auth = {
       if (!valid) {
         // Nếu session không hợp lệ, hiển thị trang login
         spinner.style.display = 'none';
+        document.body.classList.add('login-active');
         document.getElementById('login-screen').style.display = 'block';
         return;
       }
       // Session hợp lệ, hiển thị app chính
       spinner.style.display = 'none';
+      document.body.classList.remove('login-active');
       document.getElementById('main-app').style.display = 'block';
       const username = Auth.getUser();
       const deviceId = await Auth.getDeviceId();
@@ -38,6 +40,7 @@ const Auth = {
     } else {
       // Chưa đăng nhập, hiển thị trang login
       spinner.style.display = 'none';
+      document.body.classList.add('login-active');
       document.getElementById('login-screen').style.display = 'block';
     }
   };
@@ -53,14 +56,10 @@ const Auth = {
     const cacheKey = `session_${loggedInUser}_${deviceId}`;
     
     try {
-        console.log(`🔍 Kiểm tra session: ${loggedInUser}, DeviceID: ${deviceId}`);
-        
         const result = await optimizedFetch(`${BACKEND_URL}/api/check-session`, {
             method: "POST",
             body: JSON.stringify({ username: loggedInUser, deviceId }),
         }, cacheKey, 2 * 60 * 1000); // Cache 2 minutes
-
-        console.log("📌 Session check result:", result);
 
         if (!result.success) {
             // Handle error responses
@@ -106,7 +105,7 @@ const Auth = {
 
     const isProduction = window.location.hostname !== 'localhost';
     if (!isProduction) {
-      console.log(`📌 Gửi request login - Username: ${username}, DeviceID: ${deviceId}`);
+
     }
     showSpinner();
     errorDisplay.textContent = "Đang kết nối, vui lòng đợi...";
@@ -114,7 +113,7 @@ const Auth = {
     errorDisplay.style.display = "block";
 
     try {
-      console.log(`📌 Login attempt - Username: ${username}, DeviceID: ${deviceId}`);
+
       showSpinner();
       errorDisplay.textContent = "Đang kết nối...";
       errorDisplay.style.color = "#00b383";
@@ -128,36 +127,57 @@ const Auth = {
 
       if (result.success && result.data.success) {
           Auth.login(username);
+          document.body.classList.remove('login-active');
           document.getElementById("login-screen").style.display = "none";
           document.getElementById("main-app").style.display = "block";
           connectWebSocket(username, deviceId);
       } else {
         errorDisplay.style.color = "red";
-        const data = result.data;
         
-        if (data.devices) {
-          showDeviceLogoutOptions(data.devices, username, deviceId, deviceName);
-        } else {
-          const message = data.message || "Đăng nhập thất bại!";
-          alert(message);
+        // Handle different types of errors
+        if (!result.success) {
+          // HTTP error or network error
+          let message = "Đăng nhập thất bại!";
+          if (result.status === 401) {
+            message = "Sai tên đăng nhập hoặc mật khẩu!";
+          } else if (result.status === 409) {
+            // Device selection required
+            const data = result.data;
+            if (data && data.code === 'DEVICE_SELECTION_REQUIRED' && data.devices) {
+              hideSpinner(); // Hide spinner before showing modal
+              showDeviceLogoutOptions(data.devices, username, deviceId, deviceName);
+              return; // Don't show error message
+            } else {
+              message = data.message || "Đã đạt giới hạn thiết bị!";
+            }
+          } else if (result.status === 429) {
+            message = "Quá nhiều lần thử. Vui lòng đợi một lúc!";
+          } else if (result.error) {
+            message = result.error;
+          }
           errorDisplay.textContent = message;
           errorDisplay.style.display = "block";
+        } else {
+          // Response success but data indicates failure
+          const data = result.data;
+          if (data.devices) {
+            showDeviceLogoutOptions(data.devices, username, deviceId, deviceName);
+          } else {
+            const message = data.message || "Đăng nhập thất bại!";
+            errorDisplay.textContent = message;
+            errorDisplay.style.display = "block";
+          }
         }
       }   
     } catch (error) {
       errorDisplay.style.color = "red";
-      console.error('Login error:', error);
       
-      let errorMessage = "Đã xảy ra lỗi không xác định!";
+      let errorMessage = "Đã xảy ra lỗi kết nối!";
       
       if (!isOnline) {
         errorMessage = "Không có kết nối mạng. Vui lòng kiểm tra kết nối!";
-      } else if (error.message.includes('timeout')) {
+      } else if (error.message && error.message.includes('timeout')) {
         errorMessage = "Kết nối quá chậm. Vui lòng thử lại!";
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage = "Không thể kết nối đến máy chủ. Vui lòng thử lại sau!";
-      } else {
-        errorMessage = error.message;
       }
       
       errorDisplay.textContent = errorMessage;
@@ -171,12 +191,12 @@ let isLoginInProgress = false;
 // Tạo phiên bản debounce của handleLogin
 const debouncedHandleLogin = debounce(async () => {
   if (isLoginInProgress) {
-    console.log("🚫 Login already in progress, skipping...");
+
     return;
   }
   isLoginInProgress = true;
   const loginButton = document.querySelector('.btn-primary');
-  if (loginButton) loginButton.disabled = true;
+  loginButton.disabled = true;
   try {
     await handleLogin();
   } finally {
@@ -187,11 +207,11 @@ const debouncedHandleLogin = debounce(async () => {
 
 document.getElementById("password").addEventListener("keypress", (e) => {
 if (e.key === "Enter") {
-  console.log("⌨️ Enter pressed");
+
   if (!isLoginInProgress) {
     debouncedHandleLogin();
   } else {
-    console.log("🚫 Enter ignored, login in progress");
+
   }
 }
 });
@@ -251,24 +271,24 @@ if (e.key === "Enter") {
   }
 
   function showRegisterModal() {
-    console.log('showRegisterModal called, bootstrap available:', typeof bootstrap !== 'undefined');
+
     
     // Kiểm tra xem Bootstrap đã sẵn sàng chưa
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      console.log('Using Bootstrap Modal');
+
       const modal = new bootstrap.Modal(document.getElementById('registerModal'));
       modal.show();
     } else {
-      console.log('Using fallback modal');
+
       // Fallback: sử dụng jQuery nếu có hoặc hiển thị modal trực tiếp
       const modalElement = document.getElementById('registerModal');
       if (modalElement) {
         // Sử dụng jQuery Bootstrap modal nếu có
         if (typeof $ !== 'undefined' && $.fn.modal) {
-          console.log('Using jQuery modal');
+
           $('#registerModal').modal('show');
         } else {
-          console.log('Using manual modal');
+
           // Hiển thị modal bằng cách thêm class Bootstrap
           modalElement.classList.add('show');
           modalElement.style.display = 'block';
@@ -331,24 +351,24 @@ if (e.key === "Enter") {
 document.addEventListener('DOMContentLoaded', loadProvinces);
 
 function showForgotPasswordModal() {
-    console.log('showForgotPasswordModal called, bootstrap available:', typeof bootstrap !== 'undefined');
+
     
     // Kiểm tra xem Bootstrap đã sẵn sàng chưa
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      console.log('Using Bootstrap Modal');
+
       const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
       modal.show();
     } else {
-      console.log('Using fallback modal');
+
       // Fallback: sử dụng jQuery nếu có hoặc hiển thị modal trực tiếp
       const modalElement = document.getElementById('forgotPasswordModal');
       if (modalElement) {
         // Sử dụng jQuery Bootstrap modal nếu có
         if (typeof $ !== 'undefined' && $.fn.modal) {
-          console.log('Using jQuery modal');
+
           $('#forgotPasswordModal').modal('show');
         } else {
-          console.log('Using manual modal');
+
           // Hiển thị modal bằng cách thêm class Bootstrap
           modalElement.classList.add('show');
           modalElement.style.display = 'block';
@@ -411,7 +431,7 @@ async function requestOTP() {
       clearTimeout(timeout);
 
       const text = await response.text();
-      console.log("📌 Phản hồi từ API send-otp:", text); // Debug
+
       const data = JSON.parse(text);
       alert(data.message);
 
@@ -443,7 +463,7 @@ async function verifyOTP() {
     }
 
     try {
-        console.log(`📌 Gửi yêu cầu xác minh OTP - Username: ${username}, OTP: ${otp}`);
+
 
         const response = await fetch(`${BACKEND_URL}/api/verify-otp`, {
             method: "POST",
@@ -452,13 +472,13 @@ async function verifyOTP() {
         });
 
         const text = await response.text();
-        console.log("📌 Phản hồi từ API verify-otp (thô):", text);
+
 
         const data = JSON.parse(text);
         alert(data.message);
 
         if (data.success) {
-            console.log("✅ Xác minh OTP thành công!");
+
             if (resetPasswordSection) {
                 resetPasswordSection.style.display = "block"; // Chỉ hiển thị nếu phần tử tồn tại
             } else {
@@ -473,9 +493,15 @@ async function verifyOTP() {
   async function resetPassword() {
     const username = document.getElementById("forgot-username").value.trim();
     const newPassword = document.getElementById("new-password").value.trim();
+    const confirmPassword = document.getElementById("confirm-password").value.trim();
 
-    if (!username || !newPassword) {
+    if (!username || !newPassword || !confirmPassword) {
         alert("Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("Mật khẩu xác nhận không khớp!");
         return;
     }
 
@@ -485,7 +511,7 @@ async function verifyOTP() {
     }
 
     try {
-        console.log(`📌 Gửi yêu cầu đổi mật khẩu - Username: ${username}`);
+
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
@@ -501,7 +527,7 @@ async function verifyOTP() {
         clearTimeout(timeout);
 
         const text = await response.text();
-        console.log("📌 Phản hồi từ API reset-password (thô):", text);
+
 
         const data = JSON.parse(text);
         alert(data.message);
@@ -512,7 +538,50 @@ async function verifyOTP() {
           localStorage.removeItem("loggedInUser");
           localStorage.removeItem("deviceId");
 
-          window.location.href = "index.html"; // Chuyển về trang đăng nhập
+          // Reset form
+          document.getElementById("new-password").value = "";
+          document.getElementById("confirm-password").value = "";
+          document.getElementById("forgot-username").value = "";
+          document.getElementById("otp-input").value = "";
+          
+          // Ẩn các phần của modal
+          document.getElementById("otp-section").style.display = "none";
+          document.getElementById("reset-password-form").style.display = "none";
+          
+          // Đóng modal với try-catch để tránh lỗi làm dừng process
+          try {
+            const modalElement = document.getElementById('forgotPasswordModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+              modal.hide();
+            } else {
+              // Fallback nếu Bootstrap chưa khởi tạo modal
+              modalElement.style.display = 'none';
+              document.body.classList.remove('modal-open');
+              const backdrop = document.querySelector('.modal-backdrop');
+              if (backdrop) {
+                backdrop.remove();
+              }
+            }
+          } catch (modalError) {
+            console.warn("Error closing modal:", modalError);
+            // Force close modal manually
+            const modalElement = document.getElementById('forgotPasswordModal');
+            if (modalElement) {
+              modalElement.style.display = 'none';
+              modalElement.classList.remove('show');
+              document.body.classList.remove('modal-open');
+              const backdrop = document.querySelector('.modal-backdrop');
+              if (backdrop) {
+                backdrop.remove();
+              }
+            }
+          }
+
+          // Chuyển về trang đăng nhập sau một chút để người dùng đọc thông báo
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 2000);
         }
     } catch (error) {
         if (error.name === 'AbortError') {
@@ -524,27 +593,36 @@ async function verifyOTP() {
 }
 
 function showDeviceLogoutOptions(devices, username, deviceId, deviceName) {
-    let message = "Tài khoản đã đăng nhập trên 2 thiết bị:\n";
+    const deviceList = document.getElementById('device-list');
+    deviceList.innerHTML = '';
+    
     devices.forEach((device, index) => {
-      message += `${index + 1}. ${device.name} (${device.id.slice(0, 8)}...)\n`;
+        const deviceCard = document.createElement('div');
+        deviceCard.className = 'card mb-2';
+        deviceCard.innerHTML = `
+            <div class="card-body">
+                <h6 class="card-title">${device.name || 'Thiết bị không tên'}</h6>
+                <p class="card-text text-muted">ID: ${device.id.slice(0, 8)}...</p>
+                <button class="btn btn-danger btn-sm" onclick="replaceDeviceAndLogin('${username}', '${device.id}', '${deviceId}', '${deviceName}')">
+                    Đăng xuất thiết bị này và đăng nhập
+                </button>
+            </div>
+        `;
+        deviceList.appendChild(deviceCard);
     });
-    message += "Chọn thiết bị để đăng xuất (nhập số thứ tự):";
-  
-    const choice = prompt(message);
-    if (choice && devices[choice - 1]) {
-      logoutDevice(username, devices[choice - 1].id, deviceId, deviceName); // Truyền deviceName
-    } else {
-      alert("Không có thiết bị nào bị đăng xuất.");
-    }
-  }
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('deviceSelectionModal'));
+    modal.show();
+}
 
 document.getElementById("password").addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-      console.log("⌨️ Enter pressed");
+
       if (!isLoginInProgress) {
         debouncedHandleLogin();
       } else {
-        console.log("🚫 Enter ignored, login in progress");
+
       }
     }
   });
@@ -744,7 +822,7 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
   
     if (username && deviceId && !forceLogout) { // Chỉ gọi API khi đăng xuất thủ công
       try {
-        console.log(`📌 Gửi yêu cầu xóa thiết bị ${deviceId} của ${username}`);
+
         const response = await fetch(`${BACKEND_URL}/api/logout-device-from-sheet`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -755,14 +833,14 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
         if (!data.success) {
           console.error("Lỗi khi xóa thiết bị:", data.message);
         } else {
-          console.log("✅ Thiết bị đã được xóa khỏi Google Sheets");
+
         }
       } catch (error) {
         console.error("Lỗi khi gọi API xóa thiết bị:", error);
       }
     }
 
-    console.log("🚪 Đang đăng xuất người dùng...");
+
     localStorage.clear();
     setTimeout(() => {
       window.location.href = window.location.origin;
@@ -770,7 +848,7 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
   }
 
   async function logoutDevice(username, oldDeviceId, newDeviceId, newDeviceName) {
-    console.log(`📌 Đăng xuất thiết bị ${oldDeviceId} của ${username}, thay bằng ${newDeviceId} (${newDeviceName})`);
+
   
     const response = await fetch(`${BACKEND_URL}/api/logout-device`, {
       method: "POST",
@@ -779,12 +857,68 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
     });
   
     const data = await response.json();
-    console.log("📌 Nội dung JSON:", data);
+
   
     if (data.success) {
       alert("Thiết bị đã bị đăng xuất. Bạn có thể đăng nhập lại!");
       location.reload();
     } else {
       alert("Lỗi khi đăng xuất thiết bị: " + data.message);
+    }
+  }
+
+  // New function for seamless device replacement and login
+  async function replaceDeviceAndLogin(username, oldDeviceId, newDeviceId, newDeviceName) {
+    try {
+      showSpinner();
+      
+      // Get password from the login form
+      const password = document.getElementById("password").value.trim();
+      
+      if (!password) {
+        alert("Vui lòng nhập mật khẩu!");
+        return;
+      }
+      
+      const response = await fetch(`${BACKEND_URL}/api/replace-device-and-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          username, 
+          password,
+          oldDeviceId, 
+          newDeviceId, 
+          newDeviceName 
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (data.success) {
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deviceSelectionModal'));
+        if (modal) {
+          modal.hide();
+        }
+        
+        // Login successful - proceed to main app
+        Auth.login(username);
+        document.body.classList.remove('login-active');
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("main-app").style.display = "block";
+        connectWebSocket(username, newDeviceId);
+        
+        // Clear error display
+        const errorDisplay = document.getElementById("login-error");
+        errorDisplay.style.display = "none";
+        
+      } else {
+        alert("Lỗi khi thay thế thiết bị: " + data.message);
+      }
+    } catch (error) {
+      console.error('Error replacing device:', error);
+      alert("Đã xảy ra lỗi khi thay thế thiết bị!");
+    } finally {
+      hideSpinner();
     }
   }
