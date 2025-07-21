@@ -48,7 +48,8 @@ async function searchDrugs(query, resultsContainerId = 'search-results') {
                 name: drug['Hoạt chất'] || 'Không rõ tên',
                 activeIngredient: drug['Hoạt chất'] || '',
                 indication: drug['Phân loại dược lý'] || '',
-                dosage: drug['Liều thông thường trẻ em'] || drug['Liều thông thường trẻ sơ sinh'] || '',
+                dosageNewborn: drug['Liều thông thường trẻ sơ sinh'] || '',
+                dosageChildren: drug['Liều thông thường trẻ em'] || '',
                 contraindication: drug['Chống chỉ định'] || '',
                 sideEffects: drug['Tác dụng không mong muốn'] || '',
                 dosageForm: drug['Cách dùng (ngoài IV)'] || '',
@@ -151,8 +152,8 @@ function displayDrugDetail(drug) {
     // Update all the detail sections with HTML content
     updateDetailSection('drug-capnhat', drug.lastUpdated);
     updateDetailSection('drug-phanloaiduocly', drug.indication);
-    updateDetailSection('drug-lieutresosinh', drug.dosage);
-    updateDetailSection('drug-lieutreem', drug.dosage);
+    updateDetailSection('drug-lieutresosinh', drug.dosageNewborn);
+    updateDetailSection('drug-lieutreem', drug.dosageChildren);
     updateDetailSection('drug-hieuchinhCNthan', drug.kidneyAdjustment);
     updateDetailSection('drug-hieuchinhCNgan', drug.liverAdjustment);
     updateDetailSection('drug-chongchidinh', drug.contraindication);
