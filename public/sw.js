@@ -1,5 +1,6 @@
 // Service Worker for caching
-const CACHE_NAME = 'pedmed-v1.7-20250719'; // Force cache clear with new timestamp
+const CACHE_NAME = 'pedmed-v1.8-20250721'; // Force cache clear with new timestamp
+const CACHE_VERSION = '1.8.20250721';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -15,6 +16,7 @@ const urlsToCache = [
 
 // List of old cache versions to delete
 const OLD_CACHES = [
+  'pedmed-v1.7-20250719',
   'pedmed-v1.4-20250718',
   'pedmed-v1.3',
   'pedmed-v1.2', 
@@ -24,38 +26,67 @@ const OLD_CACHES = [
 
 // Install event
 self.addEventListener('install', event => {
-
+  console.log('🔧 Service Worker installing...', CACHE_VERSION);
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-
+        console.log('💾 Caching app shell...');
         return cache.addAll(urlsToCache);
+      })
+      .then(() => {
+        console.log('✅ App shell cached successfully');
+        // Notify clients about new version
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'NEW_VERSION_AVAILABLE',
+              version: CACHE_VERSION
+            });
+          });
+        });
       })
       .catch(error => {
         console.error('❌ Cache installation failed:', error);
       })
   );
+  
+  // Force activation immediately
   self.skipWaiting();
 });
 
 // Activate event
 self.addEventListener('activate', event => {
-
+  console.log('🚀 Service Worker activating...', CACHE_VERSION);
+  
   event.waitUntil(
     Promise.all([
       // Delete old caches
       caches.keys().then(cacheNames => {
+        console.log('🧹 Cleaning old caches...');
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== CACHE_NAME || OLD_CACHES.includes(cacheName)) {
-
+              console.log('🗑️ Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       }),
       // Claim all clients immediately
-      self.clients.claim()
+      self.clients.claim().then(() => {
+        console.log('✅ Service Worker claimed all clients');
+        // Notify all clients to refresh
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'VERSION_UPDATED',
+              version: CACHE_VERSION,
+              action: 'REFRESH_REQUIRED'
+            });
+          });
+        });
+      })
     ])
   );
 });
@@ -149,8 +180,40 @@ self.addEventListener('fetch', event => {
 // Background sync for offline actions
 self.addEventListener('sync', event => {
   if (event.tag === 'background-sync') {
-
+    console.log('🔄 Background sync triggered');
     // Handle offline actions here
+  }
+});
+
+// Handle messages from clients
+self.addEventListener('message', event => {
+  console.log('📨 Message received in SW:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({
+      type: 'VERSION_INFO',
+      version: CACHE_VERSION,
+      cacheName: CACHE_NAME
+    });
+    return;
+  }
+  
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+      }).then(() => {
+        event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
+      })
+    );
+    return;
   }
 });
 
@@ -158,6 +221,7 @@ self.addEventListener('sync', event => {
 self.addEventListener('push', event => {
   if (event.data) {
     const data = event.data.json();
+    console.log('📱 Push notification received:', data);
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/assets/favicon.png'
