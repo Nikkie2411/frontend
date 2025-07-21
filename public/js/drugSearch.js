@@ -262,16 +262,17 @@ function clearResults() {
 }
 
 function selectDrug(drugId, drugName) {
-    // Fill the search input with selected drug name
+    // Clear the search input instead of filling it
     const searchInput = document.getElementById('search');
     if (searchInput) {
-        searchInput.value = drugName;
+        searchInput.value = '';
     }
     
-    // Just hide the dropdown, don't clear results
+    // Hide the dropdown and clear results
     const resultsContainer = document.getElementById('search-results');
     if (resultsContainer) {
         resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
     }
     
     // Show the detailed drug information
@@ -441,10 +442,11 @@ function searchTools(query, resultsContainerId) {
 }
 
 function selectTool(toolId, actionFunction) {
-    // Hide search results
+    // Hide and clear search results
     const resultsContainer = document.getElementById('tool-search-results');
     if (resultsContainer) {
         resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
     }
     
     // Clear search input
