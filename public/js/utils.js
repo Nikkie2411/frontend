@@ -55,18 +55,28 @@ async function optimizedFetch(url, options = {}, cacheKey = null, cacheDuration 
 
       if (!response.ok) {
         // Try to get error message from response body
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorData = null;
         try {
-          const errorData = await response.json();
+          errorData = await response.json();
+        } catch (e) {
+          // If we can't parse JSON, use default error message
+        }
+        
+        // For 409 conflicts (device selection), return the full data
+        if (response.status === 409 && errorData) {
+          return { success: false, data: errorData, status: response.status };
+        }
+        
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        if (errorData) {
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
             errorMessage = errorData.error;
           }
-        } catch (e) {
-          // If we can't parse JSON, use default error message
         }
-        return { success: false, error: errorMessage, status: response.status };
+        
+        return { success: false, error: errorMessage, status: response.status, data: errorData };
       }
 
       const data = await response.json();
@@ -122,6 +132,16 @@ function connectWebSocket(username, deviceId, maxRetries = 5) {
           if (data.action === "logout") {
 
             logout(true);
+          } else if (data.type === "FORCE_LOGOUT") {
+            console.log("🚨 Received force logout notification via WebSocket");
+            alert(`⚠️ CẢNH BÁO BẢO MẬT: ${data.message}`);
+            
+            // Call forceLogout function if available, otherwise use regular logout
+            if (typeof forceLogout === 'function') {
+              forceLogout();
+            } else {
+              logout(true);
+            }
           }
         } catch (error) {
           console.warn('📩 Received non-JSON WebSocket message:', event.data);
@@ -223,59 +243,44 @@ async function getDeviceId() {
             return;
           }
           
-          // Tạo device ID mới chỉ khi chưa có
-          // Sử dụng nhiều thông số ổn định hơn để tạo fingerprint
-          
-          // Platform info - chuẩn hóa
-          let platformInfo = navigator.platform.toLowerCase();
-          if (platformInfo.includes('win')) platformInfo = 'windows';
-          else if (platformInfo.includes('mac')) platformInfo = 'macos';
-          else if (platformInfo.includes('linux')) platformInfo = 'linux';
-          else if (platformInfo.includes('android')) platformInfo = 'android';
-          else if (platformInfo.includes('iphone') || platformInfo.includes('ipad')) platformInfo = 'ios';
-          
-          // User Agent hash - ổn định trong cùng browser
-          let uaHash = 0;
-          const ua = navigator.userAgent;
-          for (let i = 0; i < ua.length; i++) {
-            uaHash = ((uaHash << 5) - uaHash) + ua.charCodeAt(i);
-            uaHash = uaHash & uaHash;
-          }
-          
-          // Tạo signature từ nhiều thông số ổn định
-          const stableSignature = [
+          // Tạo device ID ổn định dựa trên nhiều yếu tố không đổi
+          const stableFactors = [
             screen.width,
             screen.height,
-            platformInfo,
-            Math.abs(uaHash).toString(36).slice(0, 6), // UA hash ngắn gọn
             screen.colorDepth || 24,
-            new Date().getTimezoneOffset() // Timezone offset
-          ].join('|');
+            navigator.platform,
+            navigator.language || 'en',
+            new Date().getTimezoneOffset(),
+            // Bỏ User Agent vì có thể thay đổi khi browser update
+          ];
+          
+          // Tạo hash ổn định từ các yếu tố không đổi
+          const stableString = stableFactors.join('|');
           
           console.log('🔐 Device fingerprint components:', {
             screen: `${screen.width}x${screen.height}`,
-            platform: platformInfo,
-            uaHash: Math.abs(uaHash).toString(36).slice(0, 6),
+            platform: navigator.platform,
+            language: navigator.language,
             colorDepth: screen.colorDepth || 24,
             timezone: new Date().getTimezoneOffset(),
-            signature: stableSignature
+            stableString: stableString
           });
           
-          // Tạo hash ổn định
+          // Tạo hash deterministic
           let hash = 0;
-          for (let i = 0; i < stableSignature.length; i++) {
-            const char = stableSignature.charCodeAt(i);
+          for (let i = 0; i < stableString.length; i++) {
+            const char = stableString.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
             hash = hash & hash; // Convert to 32-bit integer
           }
           
-          // Đảm bảo hash dương và có độ dài cố định
+          // Tạo device ID từ hash (luôn giống nhau cho cùng device)
           const deviceId = Math.abs(hash).toString(36).padStart(8, '0').slice(0, 8);
           const deviceName = getDeviceName();
           
           // Lưu vào localStorage để đảm bảo tính nhất quán
           localStorage.setItem('device_fingerprint', deviceId);
-          console.log('💾 Stored new device ID:', deviceId);
+          console.log('💾 Generated and stored stable device ID:', deviceId);
           
           resolve({ deviceId, deviceName });
           
@@ -286,15 +291,9 @@ async function getDeviceId() {
             let fallbackId = localStorage.getItem('device_fingerprint_backup');
             
             if (!fallbackId) {
-              const screenSignature = `${screen.width}x${screen.height}x${Date.now()}`;
-              let fallbackHash = 0;
-              for (let i = 0; i < screenSignature.length; i++) {
-                const char = screenSignature.charCodeAt(i);
-                fallbackHash = ((fallbackHash << 5) - fallbackHash) + char;
-                fallbackHash = fallbackHash & fallbackHash;
-              }
-              
-              fallbackId = Math.abs(fallbackHash).toString(36).padStart(8, '0').slice(0, 8);
+              // Fallback đơn giản nhưng ổn định
+              const simpleHash = (screen.width * screen.height + new Date().getTimezoneOffset()).toString(36);
+              fallbackId = simpleHash.padStart(8, '0').slice(0, 8);
               localStorage.setItem('device_fingerprint_backup', fallbackId);
               localStorage.setItem('device_fingerprint', fallbackId);
             }
@@ -303,7 +302,7 @@ async function getDeviceId() {
             
           } catch (fallbackError) {
             console.error('❌ Even fallback failed:', fallbackError);
-            // Emergency fallback với timestamp
+            // Emergency fallback với timestamp (chỉ dùng khi tất cả fail)
             const emergencyId = (Date.now() % 1000000).toString(36).padStart(8, '0').slice(0, 8);
             localStorage.setItem('device_fingerprint', emergencyId);
             resolve({ deviceId: emergencyId, deviceName: getDeviceName() });

@@ -37,6 +37,9 @@ const Auth = {
       const username = Auth.getUser();
       const deviceId = await Auth.getDeviceId();
       connectWebSocket(username, deviceId);
+      
+      // Start new device validation system
+      startDeviceValidation();
     } else {
       // Chưa đăng nhập, hiển thị trang login
       spinner.style.display = 'none';
@@ -45,41 +48,145 @@ const Auth = {
     }
   };
 
-  // Kiểm tra trạng thái khi tải trang - với caching
+  // Simplified and more effective device validation system
+  let deviceValidationInterval;
+  let isValidationActive = false;
+  
+  function startDeviceValidation() {
+    // Stop any existing validation
+    stopDeviceValidation();
+    
+    isValidationActive = true;
+    console.log("🔄 Starting device validation system...");
+    
+    // Immediate validation check
+    performDeviceValidation();
+    
+    // Set up periodic validation every 3 minutes (more frequent for better security)
+    deviceValidationInterval = setInterval(() => {
+      if (isValidationActive && Auth.isLoggedIn()) {
+        performDeviceValidation();
+      }
+    }, 3 * 60 * 1000); // 3 minutes
+  }
+  
+  function stopDeviceValidation() {
+    if (deviceValidationInterval) {
+      clearInterval(deviceValidationInterval);
+      deviceValidationInterval = null;
+    }
+    isValidationActive = false;
+    console.log("🛑 Device validation stopped");
+  }
+  
+  async function performDeviceValidation() {
+    if (!Auth.isLoggedIn()) {
+      stopDeviceValidation();
+      return;
+    }
+    
+    const username = Auth.getUser();
+    const deviceId = await Auth.getDeviceId();
+    
+    if (!username || !deviceId) {
+      console.warn("⚠️ Missing credentials for validation");
+      return;
+    }
+    
+    console.log("� Performing device validation check...");
+    
+    try {
+      // Direct API call without cache to ensure real-time validation
+      const response = await fetch(`${BACKEND_URL}/api/check-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, deviceId }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.log("🚨 Device validation failed:", data.message);
+        
+        // Force logout immediately if device is not valid
+        if (data.message.includes("đã bị đăng xuất") || 
+            data.message.includes("bị hủy duyệt") ||
+            data.message.includes("không tồn tại")) {
+          
+          alert(`⚠️ CẢNH BÁO BẢO MẬT: ${data.message}\nBạn sẽ được đăng xuất ngay lập tức!`);
+          await forceLogout();
+        }
+      } else {
+        console.log("✅ Device validation passed");
+      }
+    } catch (error) {
+      console.error("🚨 Device validation error:", error);
+      // Don't logout on network errors - could be temporary connection issues
+    }
+  }
+  
+  async function forceLogout() {
+    stopDeviceValidation();
+    
+    // Close WebSocket
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+      window.ws.close();
+    }
+    
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Immediate redirect
+    window.location.href = window.location.origin;
+  }
+
+  // Simplified session check - no cache for real-time validation
   async function checkSession() {
     const loggedInUser = localStorage.getItem("loggedInUser");
     const { deviceId } = await getDeviceId();
 
     if (!loggedInUser || !deviceId) return false;
 
-    // Check cache first
-    const cacheKey = `session_${loggedInUser}_${deviceId}`;
-    
     try {
-        const result = await optimizedFetch(`${BACKEND_URL}/api/check-session`, {
+        // Direct API call without cache for immediate response
+        const response = await fetch(`${BACKEND_URL}/api/check-session`, {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username: loggedInUser, deviceId }),
-        }, cacheKey, 2 * 60 * 1000); // Cache 2 minutes
+        });
 
-        if (!result.success) {
-            // Handle error responses
-            if (result.data && result.data.devices) {
-                showDeviceLogoutOptions(result.data.devices, loggedInUser, deviceId, "Thiết bị hiện tại");
+        const data = await response.json();
+
+        if (!data.success) {
+            console.warn("⚠️ Session invalid:", data.message);
+            
+            // Handle device selection scenarios
+            if (data.devices) {
+                showDeviceLogoutOptions(data.devices, loggedInUser, deviceId, "Thiết bị hiện tại");
                 return false;
             }
-            if (result.data && result.data.message) {
-                console.warn("⚠️ Session invalid:", result.data.message);
+            
+            // Force logout for security violations
+            if (data.message.includes("đã bị đăng xuất") || 
+                data.message.includes("bị hủy duyệt") ||
+                data.message.includes("không tồn tại")) {
+                
+                console.log("🚨 Security violation detected - forcing logout");
+                await forceLogout();
+                return false;
             }
-            console.warn("⚠️ Session invalid, clearing local storage");
-            localStorage.clear(); // Chỉ clear storage, không reload trang
+            
+            // Clear storage for other session issues
+            localStorage.clear();
             return false;
         }
 
         return true;
     } catch (error) {
         console.error("🚨 Session check error:", error);
-        // Don't logout on network errors, just return false
-        return !isOnline; // Return true if offline (assume session valid)
+        // Return true for offline scenarios to avoid unnecessary logouts
+        return !navigator.onLine;
     }
   }
 
@@ -131,6 +238,9 @@ const Auth = {
           document.getElementById("login-screen").style.display = "none";
           document.getElementById("main-app").style.display = "block";
           connectWebSocket(username, deviceId);
+          
+          // Start new device validation system
+          startDeviceValidation();
       } else {
         errorDisplay.style.color = "red";
         
@@ -140,6 +250,8 @@ const Auth = {
           let message = "Đăng nhập thất bại!";
           if (result.status === 401) {
             message = "Sai tên đăng nhập hoặc mật khẩu!";
+          } else if (result.status === 403) {
+            message = result.error || "Tài khoản chưa được phê duyệt bởi quản trị viên.";
           } else if (result.status === 409) {
             // Device selection required
             const data = result.data;
@@ -812,6 +924,9 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
     if (!forceLogout && !confirm('Bạn có chắc muốn đăng xuất?')) {
       return;
     }
+    
+    // Stop device validation
+    stopDeviceValidation();
   
     const username = localStorage.getItem("loggedInUser");
     const deviceId = await Auth.getDeviceId(); // Lấy deviceId từ hardware fingerprint
@@ -907,6 +1022,9 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("main-app").style.display = "block";
         connectWebSocket(username, newDeviceId);
+        
+        // Start new device validation system
+        startDeviceValidation();
         
         // Clear error display
         const errorDisplay = document.getElementById("login-error");

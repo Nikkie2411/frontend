@@ -65,7 +65,6 @@ function calculateEGFR(event) {
         }
         
     } catch (error) {
-        console.error('Error calculating eGFR:', error);
         resultElement.textContent = 'Lỗi tính toán';
         resultElement.style.color = '#d9534f';
     }
@@ -100,7 +99,6 @@ function calculateBSA(event) {
         resultElement.style.color = '#28a745';
         
     } catch (error) {
-        console.error('Error calculating BSA:', error);
         resultElement.textContent = 'Lỗi tính toán';
         resultElement.style.color = '#d9534f';
     }
@@ -134,7 +132,6 @@ function initBMICalculator() {
     
     const calculatorContainer = document.querySelector('.calculator-container');
     if (!calculatorContainer) {
-        console.error('❌ Calculator container not found');
         return;
     }
     
@@ -811,7 +808,7 @@ function addToCalculatorHistory(calculation) {
     try {
         localStorage.setItem('calculatorHistory', JSON.stringify(calculatorHistory));
     } catch (error) {
-        console.warn('⚠️ Could not save calculator history:', error);
+        // Silently fail if localStorage is not available
     }
 }
 
@@ -822,7 +819,6 @@ function loadCalculatorHistory() {
             calculatorHistory = JSON.parse(stored);
         }
     } catch (error) {
-        console.warn('⚠️ Could not load calculator history:', error);
         calculatorHistory = [];
     }
 }
@@ -899,7 +895,3 @@ window.calculateEGFR = calculateEGFR;
 window.calculateBSA = calculateBSA;
 
 // Also ensure they're available immediately
-console.log('Tools.js loaded successfully', {
-    calculateEGFR: typeof window.calculateEGFR,
-    calculateBSA: typeof window.calculateBSA
-});
