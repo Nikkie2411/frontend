@@ -1,4 +1,13 @@
 // Enhanced AI Chatbot with Provider Switching
+
+// Ensure BACKEND_URL is available
+if (typeof BACKEND_URL === 'undefined') {
+    const BACKEND_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://pedmedvn.onrender.com';
+    console.log('⚠️ BACKEND_URL not found, using fallback:', BACKEND_URL);
+}
+
 let chatHistory = [];
 let isChatOpen = false;
 let isTyping = false;
@@ -17,16 +26,24 @@ function initializeChatbot() {
 // Initialize chatbot DOM elements
 function initializeChatbotDom() {
     try {
+        // Check if user is logged in first
+        if (document.body.classList.contains('login-active')) {
+            console.log('🤖 Login screen active, not showing chatbot');
+            return;
+        }
+        
         const existingWidget = document.getElementById('chat-widget');
         if (existingWidget) {
             console.log('🤖 Using existing chat widget from HTML');
             setupChatEventListeners();
-            showChatWidget();
         } else {
             console.log('🤖 Creating new AI chat widget');
             createChatWidget();
             setupChatEventListeners();
         }
+        
+        // Show chat toggle button (not the full widget)
+        showChatToggle();
         
         // Load AI providers info
         loadAIProviders();
@@ -39,22 +56,71 @@ function initializeChatbotDom() {
 
 // Load available AI providers
 async function loadAIProviders() {
+    console.log('🔄 Loading AI providers...');
+    
     try {
-        const response = await fetch(`${BACKEND_URL}/api/ai-chatbot/providers`);
+        const apiUrl = `${BACKEND_URL}/api/ai-chatbot/providers`;
+        console.log('📡 Fetching from:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        console.log('📊 Response status:', response.status);
+        console.log('📊 Response ok:', response.ok);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
+        console.log('📦 Response data:', result);
         
         if (result.success) {
             availableProviders = result.data.providers;
             currentAIProvider = result.data.currentProvider;
             
+            console.log('✅ Providers loaded successfully:');
+            console.log('📋 Available providers:', availableProviders);
+            console.log(`🤖 Current AI Provider: ${currentAIProvider}`);
+            
             // Update chat header với AI provider
             updateChatHeader();
-            
-            console.log(`🤖 Current AI Provider: ${currentAIProvider.toUpperCase()}`);
-            console.log('📋 Available providers:', availableProviders.map(p => p.name));
+        } else {
+            console.error('❌ API returned success: false', result);
+            throw new Error(result.message || 'Unknown API error');
         }
     } catch (error) {
         console.error('❌ Error loading AI providers:', error);
+        console.error('🔍 Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // Set fallback providers for offline mode
+        console.log('� Setting fallback providers...');
+        availableProviders = [
+            {
+                name: 'gemini',
+                displayName: 'Google Gemini AI',
+                description: 'AI miễn phí từ Google với 50 requests/day',
+                status: 'ready',
+                isActive: true
+            },
+            {
+                name: 'groq',
+                displayName: 'Groq AI',
+                description: 'AI siêu nhanh với 14,400 requests/day MIỄN PHÍ',
+                status: 'needs_api_key',
+                isActive: false
+            }
+        ];
+        currentAIProvider = 'gemini';
+        console.log('⚠️ Using fallback providers');
     }
 }
 
@@ -66,6 +132,7 @@ function createChatWidget() {
         <!-- Chat Toggle Button -->
         <div id="chat-toggle" class="chat-toggle">
             <div class="chat-icon">🤖</div>
+            <div class="chat-tooltip">Trợ lý ảo PedMedVN</div>
             <div class="chat-badge" id="chat-badge" style="display: none;">AI</div>
         </div>
         
@@ -83,7 +150,6 @@ function createChatWidget() {
                     <button id="ai-settings-btn" class="chat-settings-btn" onclick="showAISettings()" title="AI Settings">
                         ⚙️
                     </button>
-                    <button id="chat-close" class="chat-close" onclick="toggleChat()">&times;</button>
                 </div>
             </div>
             
@@ -139,7 +205,6 @@ function createChatWidget() {
                     <span></span>
                     <span></span>
                     <span></span>
-                    <div class="typing-text">AI đang suy nghĩ...</div>
                 </div>
                 <div class="chat-input-wrapper">
                     <input type="text" id="chat-input" placeholder="Hỏi AI về thuốc..." maxlength="1000">
@@ -154,6 +219,41 @@ function createChatWidget() {
     `;
     
     document.body.appendChild(chatWidget);
+}
+
+// Show chat toggle button (round button with tooltip)
+function showChatToggle() {
+    // Remove any existing chat button
+    const existingButton = document.getElementById('chat-button');
+    if (existingButton) {
+        existingButton.remove();
+    }
+    
+    // Just show the widget element (but keep chat window closed)
+    const chatWidget = document.getElementById('chat-widget');
+    if (chatWidget) {
+        chatWidget.style.display = 'block';
+        // Ensure chat window is closed initially
+        const chatWindow = document.getElementById('chat-window');
+        if (chatWindow) {
+            chatWindow.style.display = 'none';
+        }
+    }
+    console.log('✅ Chat toggle button shown');
+}
+
+// Toggle between chat button and chat widget
+function toggleChatWidget() {
+    const existingButton = document.getElementById('chat-button');
+    const existingWidget = document.getElementById('chat-widget');
+    
+    if (existingButton) {
+        existingButton.remove();
+        if (!existingWidget) {
+            createChatWidget();
+            showChatWidget();
+        }
+    }
 }
 
 // Setup event listeners
@@ -193,37 +293,194 @@ function updateChatHeader() {
     if (statusElement && currentAIProvider) {
         const provider = availableProviders.find(p => p.name === currentAIProvider);
         if (provider) {
-            statusElement.textContent = `Powered by ${provider.displayName} AI`;
+            let statusText = `Powered by ${provider.displayName} AI`;
+            
+            // Thêm thông tin quota cho các providers
+            if (currentAIProvider === 'groq') {
+                statusText += ' • 14,400 requests/day FREE';
+            } else if (currentAIProvider === 'gemini') {
+                statusText += ' • 50 requests/day';
+            } else if (currentAIProvider === 'openai') {
+                statusText += ' • $5 free credit';
+            }
+            
+            statusElement.textContent = statusText;
             statusElement.style.color = provider.status === 'ready' ? '#00b383' : '#ff6b6b';
+            
+            // Thêm emoji cho provider hiện tại
+            const providerEmoji = {
+                'groq': '⚡', // Lightning for speed
+                'gemini': '🧠', // Brain for intelligence  
+                'openai': '🤖', // Robot
+                'original': '📚' // Books for local docs
+            };
+            
+            const chatAvatar = document.querySelector('.chat-avatar');
+            if (chatAvatar) {
+                chatAvatar.textContent = providerEmoji[currentAIProvider] || '🤖';
+            }
         }
     }
 }
 
 // Show AI settings panel
 function showAISettings() {
+    console.log('🔧 Opening AI Settings...');
+    console.log('📋 Available providers:', availableProviders);
+    
     const panel = document.getElementById('ai-settings-panel');
     const providersList = document.getElementById('ai-providers-list');
     
-    if (panel && providersList) {
-        // Populate providers list
-        providersList.innerHTML = availableProviders.map(provider => `
-            <div class="ai-provider-item ${provider.isActive ? 'active' : ''} ${provider.status}">
-                <div class="provider-info">
-                    <div class="provider-name">${provider.displayName}</div>
-                    <div class="provider-description">${provider.description}</div>
-                    <div class="provider-status status-${provider.status}">${provider.status === 'ready' ? '✅ Sẵn sàng' : provider.status === 'needs_api_key' ? '🔑 Cần API key' : '❌ Không khả dụng'}</div>
-                </div>
-                <button class="provider-action-btn" 
-                        onclick="switchAIProvider('${provider.name}')"
-                        ${provider.status !== 'ready' ? 'disabled' : ''}
-                        ${provider.isActive ? 'style="display:none"' : ''}>
-                    ${provider.isActive ? 'Đang dùng' : 'Chuyển sang'}
-                </button>
-            </div>
-        `).join('');
-        
-        panel.style.display = 'block';
+    if (!panel || !providersList) {
+        console.error('❌ AI settings panel elements not found');
+        return;
     }
+    
+    // If providers not loaded yet, try to load them
+    if (!availableProviders || availableProviders.length === 0) {
+        console.log('⚠️ No providers loaded, attempting to load...');
+        loadAIProviders().then(() => {
+            if (availableProviders && availableProviders.length > 0) {
+                showAISettings(); // Retry after loading
+            } else {
+                // Show fallback if still no providers
+                showFallbackProviders();
+            }
+        }).catch(error => {
+            console.error('❌ Failed to load providers:', error);
+            showFallbackProviders();
+        });
+        return;
+    }
+    
+    // Populate providers list
+    providersList.innerHTML = availableProviders.map(provider => {
+        // Thêm thông tin chi tiết cho từng provider
+        let providerQuota = '';
+        let providerBadge = '';
+        
+        if (provider.name === 'groq') {
+            providerQuota = '⚡ 14,400 requests/day FREE';
+            providerBadge = '<span class="provider-badge free">UNLIMITED FREE</span>';
+        } else if (provider.name === 'gemini') {
+            providerQuota = '🧠 50 requests/day FREE';
+            providerBadge = '<span class="provider-badge limited">LIMITED FREE</span>';
+        } else if (provider.name === 'openai') {
+            providerQuota = '🤖 $5 free credit';
+            providerBadge = '<span class="provider-badge paid">PAID</span>';
+        } else if (provider.name === 'original') {
+            providerQuota = '📚 Local documents only';
+            providerBadge = '<span class="provider-badge basic">BASIC</span>';
+        }
+        
+        return `
+        <div class="ai-provider-item ${provider.isActive ? 'active' : ''} ${provider.status}">
+            <div class="provider-info">
+                <div class="provider-header">
+                    <div class="provider-name">${provider.displayName}</div>
+                    ${providerBadge}
+                </div>
+                <div class="provider-description">${provider.description}</div>
+                <div class="provider-quota">${providerQuota}</div>
+                <div class="provider-status status-${provider.status}">${provider.status === 'ready' ? '✅ Sẵn sàng' : provider.status === 'needs_api_key' ? '🔑 Cần API key' : '❌ Không khả dụng'}</div>
+            </div>
+            <button class="provider-action-btn" 
+                    onclick="switchAIProvider('${provider.name}')"
+                    ${provider.status !== 'ready' ? 'disabled' : ''}
+                    ${provider.isActive ? 'style="background: #00b383; color: white;"' : ''}>
+                ${provider.isActive ? 'Đang dùng' : 'Chuyển sang'}
+            </button>
+        </div>`;
+    }).join('');
+    
+    panel.style.display = 'block';
+    console.log('✅ AI Settings panel displayed');
+}
+
+// Show fallback providers when backend is not available
+function showFallbackProviders() {
+    console.log('🔄 Showing fallback providers...');
+    
+    const panel = document.getElementById('ai-settings-panel');
+    const providersList = document.getElementById('ai-providers-list');
+    
+    if (!panel || !providersList) return;
+    
+    // Create fallback provider list
+    const fallbackProviders = [
+        {
+            name: 'gemini',
+            displayName: 'Google Gemini AI',
+            description: 'AI miễn phí từ Google với 50 requests/day',
+            status: 'ready',
+            isActive: true
+        },
+        {
+            name: 'groq',
+            displayName: 'Groq AI',
+            description: 'AI siêu nhanh với 14,400 requests/day MIỄN PHÍ',
+            status: 'needs_api_key',
+            isActive: false
+        },
+        {
+            name: 'openai',
+            displayName: 'OpenAI GPT',
+            description: 'AI chất lượng cao với $5 free credit',
+            status: 'needs_api_key',
+            isActive: false
+        }
+    ];
+    
+    providersList.innerHTML = fallbackProviders.map(provider => {
+        let providerQuota = '';
+        let providerBadge = '';
+        
+        if (provider.name === 'groq') {
+            providerQuota = '⚡ 14,400 requests/day FREE';
+            providerBadge = '<span class="provider-badge free">UNLIMITED FREE</span>';
+        } else if (provider.name === 'gemini') {
+            providerQuota = '🧠 50 requests/day FREE';
+            providerBadge = '<span class="provider-badge limited">LIMITED FREE</span>';
+        } else if (provider.name === 'openai') {
+            providerQuota = '🤖 $5 free credit';
+            providerBadge = '<span class="provider-badge paid">PAID</span>';
+        }
+        
+        return `
+        <div class="ai-provider-item ${provider.isActive ? 'active' : ''} ${provider.status}">
+            <div class="provider-info">
+                <div class="provider-header">
+                    <div class="provider-name">${provider.displayName}</div>
+                    ${providerBadge}
+                </div>
+                <div class="provider-description">${provider.description}</div>
+                <div class="provider-quota">${providerQuota}</div>
+                <div class="provider-status status-${provider.status}">${provider.status === 'ready' ? '✅ Sẵn sàng' : provider.status === 'needs_api_key' ? '🔑 Cần API key' : '❌ Không khả dụng'}</div>
+            </div>
+            <button class="provider-action-btn" 
+                    onclick="switchAIProvider('${provider.name}')"
+                    ${provider.status !== 'ready' ? 'disabled' : ''}
+                    ${provider.isActive ? 'style="background: #00b383; color: white;"' : ''}>
+                ${provider.isActive ? 'Đang dùng' : 'Chuyển sang'}
+            </button>
+        </div>`;
+    }).join('');
+    
+    // Add notice about backend connection
+    providersList.innerHTML += `
+        <div class="provider-notice">
+            <p>⚠️ <strong>Không thể kết nối với backend.</strong></p>
+            <p>Đây là danh sách AI providers fallback. Để sử dụng đầy đủ tính năng, vui lòng:</p>
+            <ul>
+                <li>Khởi động backend server: <code>npm run dev</code></li>
+                <li>Kiểm tra kết nối mạng</li>
+                <li>Reload trang sau khi backend ready</li>
+            </ul>
+        </div>
+    `;
+    
+    panel.style.display = 'block';
+    console.log('✅ Fallback AI Settings panel displayed');
 }
 
 // Hide AI settings panel
@@ -237,15 +494,34 @@ function hideAISettings() {
 // Switch AI provider
 async function switchAIProvider(providerName) {
     try {
-        const response = await fetch(`${BACKEND_URL}/api/ai-chatbot/switch-provider`, {
+        console.log('🔄 Switching to provider:', providerName);
+        console.log('📡 Backend URL:', BACKEND_URL);
+        
+        const apiUrl = `${BACKEND_URL}/api/ai-chatbot/switch-provider`;
+        console.log('📡 Full API URL:', apiUrl);
+        
+        const requestBody = { provider: providerName };
+        console.log('📦 Request body:', requestBody);
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ provider: providerName })
+            body: JSON.stringify(requestBody)
         });
         
+        console.log('📊 Response status:', response.status);
+        console.log('📊 Response ok:', response.ok);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Response error text:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
         const result = await response.json();
+        console.log('📦 Response data:', result);
         
         if (result.success) {
             currentAIProvider = providerName;
@@ -305,8 +581,9 @@ async function sendMessage() {
                 confidence: result.data.confidence,
                 responseTime: result.data.responseTime,
                 aiProvider: result.data.aiProvider,
-                aiModel: result.data.aiModel,
-                isAiGenerated: result.data.isAiGenerated
+                aiModel: result.data.model || result.data.aiModel,
+                isAiGenerated: result.data.isAiGenerated,
+                note: result.data.note // Show quota note if exists
             });
         } else {
             addMessage(result.message || 'Đã xảy ra lỗi với AI. Vui lòng thử lại.', 'bot', { isError: true });
@@ -358,20 +635,29 @@ function addMessage(text, sender, metadata = {}) {
         `;
     }
     
-    // Add sources if available
-    if (metadata.sources && Array.isArray(metadata.sources) && metadata.sources.length > 0) {
+    // Add quota note if exists
+    if (metadata.note) {
         messageHTML += `
-            <div class="message-sources">
-                <small><strong>Nguồn tham khảo:</strong></small>
-                ${metadata.sources.map(source => `
-                    <div class="source-item">
-                        📄 ${source.title} (${source.confidence}% tin cậy)
-                        <br><em>Từ: ${source.source}</em>
-                    </div>
-                `).join('')}
+            <div class="quota-note" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 12px; color: #856404;">
+                ℹ️ ${metadata.note}
             </div>
         `;
     }
+    
+    // Sources removed per user request - cleaner UI
+    // if (metadata.sources && Array.isArray(metadata.sources) && metadata.sources.length > 0) {
+    //     messageHTML += `
+    //         <div class="message-sources">
+    //             <small><strong>Nguồn tham khảo:</strong></small>
+    //             ${metadata.sources.map(source => `
+    //                 <div class="source-item">
+    //                     📄 ${source.title} (${source.confidence}% tin cậy)
+    //                     <br><em>Từ: ${source.source}</em>
+    //                 </div>
+    //             `).join('')}
+    //         </div>
+    //     `;
+    // }
     
     // Add confidence badge
     if (metadata.confidence && metadata.confidence > 0) {

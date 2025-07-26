@@ -38,6 +38,11 @@ const Auth = {
       const deviceId = await Auth.getDeviceId();
       connectWebSocket(username, deviceId);
       
+      // Initialize chatbot after successful login
+      if (typeof initializeChatbot === 'function') {
+        initializeChatbot();
+      }
+      
       // Start new device validation system
       startDeviceValidation();
     } else {
@@ -127,6 +132,11 @@ const Auth = {
   
   async function forceLogout() {
     stopDeviceValidation();
+    
+    // Hide chatbot widget
+    if (typeof hideChatWidget === 'function') {
+      hideChatWidget();
+    }
     
     // Close WebSocket
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
@@ -238,6 +248,11 @@ const Auth = {
           document.getElementById("login-screen").style.display = "none";
           document.getElementById("main-app").style.display = "block";
           connectWebSocket(username, deviceId);
+          
+          // Initialize chatbot after successful login
+          if (typeof initializeChatbot === 'function') {
+            initializeChatbot();
+          }
           
           // Start new device validation system
           startDeviceValidation();
@@ -927,6 +942,11 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
     
     // Stop device validation
     stopDeviceValidation();
+    
+    // Hide chatbot widget
+    if (typeof hideChatWidget === 'function') {
+      hideChatWidget();
+    }
   
     const username = localStorage.getItem("loggedInUser");
     const deviceId = await Auth.getDeviceId(); // Lấy deviceId từ hardware fingerprint
@@ -1022,6 +1042,11 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("main-app").style.display = "block";
         connectWebSocket(username, newDeviceId);
+        
+        // Initialize chatbot after successful login
+        if (typeof initializeChatbotDom === 'function') {
+            initializeChatbotDom();
+        }
         
         // Start new device validation system
         startDeviceValidation();

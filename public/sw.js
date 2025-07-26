@@ -1,6 +1,6 @@
 // Service Worker for caching
-const CACHE_NAME = 'pedmed-v1.8-20250721'; // Force cache clear with new timestamp
-const CACHE_VERSION = '1.8.20250721';
+const CACHE_NAME = 'pedmed-v2.0-20250722'; // Force cache clear with chatbot widget
+const CACHE_VERSION = '2.0.20250722';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,12 +10,14 @@ const urlsToCache = [
   '/js/drugSearch.js',
   '/js/tools.js',
   '/js/ui.js',
+  '/js/chatbot.js',
   '/assets/favicon.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css'
 ];
 
 // List of old cache versions to delete
 const OLD_CACHES = [
+  'pedmed-v1.8-20250721',
   'pedmed-v1.7-20250719',
   'pedmed-v1.4-20250718',
   'pedmed-v1.3',
