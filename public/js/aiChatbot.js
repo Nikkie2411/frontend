@@ -11,7 +11,7 @@ if (typeof BACKEND_URL === 'undefined') {
 let chatHistory = [];
 let isChatOpen = false;
 let isTyping = false;
-let currentAIProvider = 'gemini'; // Default AI provider
+let currentAIProvider = 'groq'; // Default AI provider
 let availableProviders = [];
 
 // Initialize chatbot with AI capabilities
@@ -175,9 +175,8 @@ function createChatWidget() {
                             <br><br>
                             <strong>Tính năng mới:</strong>
                             <ul>
-                                <li>🤖 Tích hợp Google Gemini AI (miễn phí)</li>
                                 <li>⚡ Groq AI (siêu nhanh & miễn phí)</li>
-                                <li>🧠 OpenAI GPT (chất lượng cao)</li>
+                                <li>� Tích hợp Google Gemini AI (miễn phí)</li>
                                 <li>📚 Chỉ trả lời về thuốc có trong Drive</li>
                             </ul>
                         </div>
@@ -300,8 +299,6 @@ function updateChatHeader() {
                 statusText += ' • 14,400 requests/day FREE';
             } else if (currentAIProvider === 'gemini') {
                 statusText += ' • 50 requests/day';
-            } else if (currentAIProvider === 'openai') {
-                statusText += ' • $5 free credit';
             }
             
             statusElement.textContent = statusText;
@@ -311,7 +308,6 @@ function updateChatHeader() {
             const providerEmoji = {
                 'groq': '⚡', // Lightning for speed
                 'gemini': '🧠', // Brain for intelligence  
-                'openai': '🤖', // Robot
                 'original': '📚' // Books for local docs
             };
             
@@ -365,9 +361,6 @@ function showAISettings() {
         } else if (provider.name === 'gemini') {
             providerQuota = '🧠 50 requests/day FREE';
             providerBadge = '<span class="provider-badge limited">LIMITED FREE</span>';
-        } else if (provider.name === 'openai') {
-            providerQuota = '🤖 $5 free credit';
-            providerBadge = '<span class="provider-badge paid">PAID</span>';
         } else if (provider.name === 'original') {
             providerQuota = '📚 Local documents only';
             providerBadge = '<span class="provider-badge basic">BASIC</span>';
@@ -423,9 +416,9 @@ function showFallbackProviders() {
             isActive: false
         },
         {
-            name: 'openai',
-            displayName: 'OpenAI GPT',
-            description: 'AI chất lượng cao với $5 free credit',
+            name: 'gemini',
+            displayName: 'Google Gemini',
+            description: 'AI thông minh từ Google với 50 requests/day FREE',
             status: 'needs_api_key',
             isActive: false
         }
@@ -441,9 +434,6 @@ function showFallbackProviders() {
         } else if (provider.name === 'gemini') {
             providerQuota = '🧠 50 requests/day FREE';
             providerBadge = '<span class="provider-badge limited">LIMITED FREE</span>';
-        } else if (provider.name === 'openai') {
-            providerQuota = '🤖 $5 free credit';
-            providerBadge = '<span class="provider-badge paid">PAID</span>';
         }
         
         return `

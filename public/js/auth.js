@@ -1,21 +1,23 @@
 const Auth = {
-    isLoggedIn: () => localStorage.getItem('isLoggedIn') === 'true',
-    getUser: () => localStorage.getItem('loggedInUser'),
+    isLoggedIn: () => sessionStorage.getItem('isLoggedIn') === 'true',
+    getUser: () => sessionStorage.getItem('loggedInUser'),
     getDeviceId: async () => {
-      // Device ID được tạo từ hardware fingerprint, không lưu localStorage
+      // Device ID được tạo từ hardware fingerprint, không lưu storage
       const { deviceId } = await getDeviceId();
       return deviceId;
     },
     login: (username) => {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('loggedInUser', username);
-      // Không lưu deviceId vào localStorage nữa vì nó sẽ được tạo từ hardware
+      sessionStorage.setItem('isLoggedIn', 'true');
+      sessionStorage.setItem('loggedInUser', username);
+      // Không lưu deviceId vào storage nữa vì nó sẽ được tạo từ hardware
     },
-    logout: () => localStorage.clear()
+    logout: () => {
+      sessionStorage.clear();
+      localStorage.clear(); // Clear both for safety
+    }
 };
 
   // Initialize
-
   window.onload = async function() {
     // Ẩn spinner khi bắt đầu kiểm tra auth
     const spinner = document.getElementById('spinner');
@@ -51,6 +53,28 @@ const Auth = {
       document.body.classList.add('login-active');
       document.getElementById('login-screen').style.display = 'block';
     }
+    
+    // Auto logout when tab is closed or page is refreshed (session-based)
+    window.addEventListener('beforeunload', async function(e) {
+      if (Auth.isLoggedIn()) {
+        const username = Auth.getUser();
+        const deviceId = await Auth.getDeviceId();
+        
+        // Logout from server
+        try {
+          await fetch('/api/logout-device-from-sheet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, deviceId })
+          });
+        } catch (error) {
+          console.error('Error during beforeunload logout:', error);
+        }
+        
+        // Clear session storage
+        Auth.logout();
+      }
+    });
   };
 
   // Simplified and more effective device validation system
@@ -144,8 +168,8 @@ const Auth = {
     }
     
     // Clear all storage
-    localStorage.clear();
     sessionStorage.clear();
+    localStorage.clear();
     
     // Immediate redirect
     window.location.href = window.location.origin;
@@ -153,7 +177,7 @@ const Auth = {
 
   // Simplified session check - no cache for real-time validation
   async function checkSession() {
-    const loggedInUser = localStorage.getItem("loggedInUser");
+    const loggedInUser = sessionStorage.getItem("loggedInUser");
     const { deviceId } = await getDeviceId();
 
     if (!loggedInUser || !deviceId) return false;
@@ -661,9 +685,9 @@ async function verifyOTP() {
 
         if (data.success) {
           // Xóa thông tin đăng nhập trên trình duyệt
-          localStorage.removeItem("isLoggedIn");
-          localStorage.removeItem("loggedInUser");
-          localStorage.removeItem("deviceId");
+          sessionStorage.removeItem("isLoggedIn");
+          sessionStorage.removeItem("loggedInUser");
+          localStorage.clear(); // Clear any remaining localStorage data
 
           // Reset form
           document.getElementById("new-password").value = "";
@@ -948,7 +972,7 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
       hideChatWidget();
     }
   
-    const username = localStorage.getItem("loggedInUser");
+    const username = sessionStorage.getItem("loggedInUser");
     const deviceId = await Auth.getDeviceId(); // Lấy deviceId từ hardware fingerprint
 
     if (window.ws && window.ws.readyState === WebSocket.OPEN) {
@@ -976,6 +1000,7 @@ const debouncedValidateUsername = debounce(validateUsernameInput, 500);
     }
 
 
+    sessionStorage.clear();
     localStorage.clear();
     setTimeout(() => {
       window.location.href = window.location.origin;
