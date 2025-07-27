@@ -1,43 +1,53 @@
-// Service Worker for caching
-const CACHE_NAME = 'pedmed-v2.0-20250722'; // Force cache clear with chatbot widget
-const CACHE_VERSION = '2.0.20250722';
+// Service Worker for caching with dynamic version
+const CACHE_VERSION = new Date().toISOString().slice(0,16).replace(/[-:T]/g, '');
+const CACHE_NAME = `pedmed-v${CACHE_VERSION}`;
+
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/styles.css',
+  '/js/cache-bust.js',
+  '/js/version.js',
   '/js/utils.js',
   '/js/auth.js',
   '/js/drugSearch.js',
   '/js/tools.js',
   '/js/ui.js',
-  '/js/chatbot.js',
+  '/js/aiChatbot.js',
   '/assets/favicon.png',
+  '/version.json',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css'
 ];
 
-// List of old cache versions to delete
-const OLD_CACHES = [
-  'pedmed-v1.8-20250721',
-  'pedmed-v1.7-20250719',
-  'pedmed-v1.4-20250718',
-  'pedmed-v1.3',
-  'pedmed-v1.2', 
-  'pedmed-v1.1',
-  'pedmed-v1.0'
-];
+// Auto-detect old caches for cleanup
+async function getOldCaches() {
+  const cacheNames = await caches.keys();
+  return cacheNames.filter(name => 
+    name.startsWith('pedmed-') && name !== CACHE_NAME
+  );
+}
 
 // Install event
 self.addEventListener('install', event => {
-  console.log('🔧 Service Worker installing...', CACHE_VERSION);
+  // Only log in development
+  const isDev = self.location.hostname === 'localhost';
+  
+  if (isDev) {
+    console.log('🔧 Service Worker installing...', CACHE_VERSION);
+  }
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('💾 Caching app shell...');
+        if (isDev) {
+          console.log('💾 Caching app shell...');
+        }
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        console.log('✅ App shell cached successfully');
+        if (isDev) {
+          console.log('✅ App shell cached successfully');
+        }
         // Notify clients about new version
         self.clients.matchAll().then(clients => {
           clients.forEach(client => {
@@ -49,7 +59,9 @@ self.addEventListener('install', event => {
         });
       })
       .catch(error => {
-        console.error('❌ Cache installation failed:', error);
+        if (isDev) {
+          console.error('❌ Cache installation failed:', error);
+        }
       })
   );
   
@@ -59,25 +71,33 @@ self.addEventListener('install', event => {
 
 // Activate event
 self.addEventListener('activate', event => {
-  console.log('🚀 Service Worker activating...', CACHE_VERSION);
+  const isDev = self.location.hostname === 'localhost';
+  
+  if (isDev) {
+    console.log('🚀 Service Worker activating...', CACHE_VERSION);
+  }
   
   event.waitUntil(
     Promise.all([
-      // Delete old caches
-      caches.keys().then(cacheNames => {
-        console.log('🧹 Cleaning old caches...');
+      // Delete old caches dynamically
+      getOldCaches().then(oldCacheNames => {
+        if (isDev && oldCacheNames.length > 0) {
+          console.log('🧹 Cleaning old caches...', oldCacheNames);
+        }
         return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME || OLD_CACHES.includes(cacheName)) {
+          oldCacheNames.map(cacheName => {
+            if (isDev) {
               console.log('🗑️ Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
             }
+            return caches.delete(cacheName);
           })
         );
       }),
       // Claim all clients immediately
       self.clients.claim().then(() => {
-        console.log('✅ Service Worker claimed all clients');
+        if (isDev) {
+          console.log('✅ Service Worker claimed all clients');
+        }
         // Notify all clients to refresh
         self.clients.matchAll().then(clients => {
           clients.forEach(client => {

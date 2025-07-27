@@ -131,7 +131,7 @@ function createChatWidget() {
     chatWidget.innerHTML = `
         <!-- Chat Toggle Button -->
         <div id="chat-toggle" class="chat-toggle">
-            <div class="chat-icon">🤖</div>
+            <img src="/assets/favicon.png" alt="Chatbot" style="width: 32px; height: 32px; object-fit: contain;">
             <div class="chat-tooltip">Trợ lý ảo PedMedVN</div>
             <div class="chat-badge" id="chat-badge" style="display: none;">AI</div>
         </div>
@@ -140,14 +140,16 @@ function createChatWidget() {
         <div id="chat-window" class="chat-window" style="display: none;">
             <div class="chat-header">
                 <div class="chat-title">
-                    <div class="chat-avatar">🤖</div>
+                    <div class="chat-avatar">
+                        <img src="/assets/favicon.png" alt="Bot" style="width: 24px; height: 24px; object-fit: contain;">
+                    </div>
                     <div>
                         <div class="chat-name">AI Medical Assistant</div>
                         <div class="chat-status" id="ai-provider-status">Powered by AI</div>
                     </div>
                 </div>
                 <div class="chat-controls">
-                    <button id="ai-settings-btn" class="chat-settings-btn" onclick="showAISettings()" title="AI Settings">
+                    <button id="ai-settings-btn" class="chat-settings-btn" onclick="toggleAISettings()" title="AI Settings">
                         ⚙️
                     </button>
                 </div>
@@ -157,7 +159,6 @@ function createChatWidget() {
             <div id="ai-settings-panel" class="ai-settings-panel" style="display: none;">
                 <div class="ai-settings-header">
                     <h4>AI Provider Settings</h4>
-                    <button onclick="hideAISettings()">×</button>
                 </div>
                 <div class="ai-providers-list" id="ai-providers-list">
                     <!-- Will be populated dynamically -->
@@ -167,7 +168,9 @@ function createChatWidget() {
             <!-- Chat Messages -->
             <div id="chat-messages" class="chat-messages">
                 <div class="message bot-message">
-                    <div class="message-avatar">🤖</div>
+                    <div class="message-avatar">
+                        <img src="/assets/favicon.png" alt="Bot" style="width: 24px; height: 24px; object-fit: contain;">
+                    </div>
                     <div class="message-content">
                         <div class="message-text">
                             Xin chào! Tôi là AI Medical Assistant được tích hợp với nhiều AI engine mạnh mẽ. 
@@ -313,9 +316,39 @@ function updateChatHeader() {
             
             const chatAvatar = document.querySelector('.chat-avatar');
             if (chatAvatar) {
-                chatAvatar.textContent = providerEmoji[currentAIProvider] || '🤖';
+                const img = chatAvatar.querySelector('img');
+                if (img) {
+                    // Keep favicon image, just update the alt text with provider info
+                    img.alt = `${currentAIProvider || 'AI'} Bot`;
+                } else {
+                    // Fallback if no image found
+                    chatAvatar.innerHTML = '<img src="/assets/favicon.png" alt="Bot" style="width: 24px; height: 24px; object-fit: contain;">';
+                }
             }
         }
+    }
+}
+
+// Toggle AI settings panel (show/hide)
+function toggleAISettings() {
+    const panel = document.getElementById('ai-settings-panel');
+    
+    if (!panel) {
+        console.error('❌ AI settings panel not found');
+        return;
+    }
+    
+    console.log('🔧 Toggle AI Settings - Current display:', panel.style.display);
+    
+    // Check if panel is currently visible
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        // Show panel
+        console.log('📱 Opening AI Settings panel...');
+        showAISettings();
+    } else {
+        // Hide panel
+        console.log('📱 Closing AI Settings panel...');
+        hideAISettings();
     }
 }
 
@@ -337,7 +370,7 @@ function showAISettings() {
         console.log('⚠️ No providers loaded, attempting to load...');
         loadAIProviders().then(() => {
             if (availableProviders && availableProviders.length > 0) {
-                showAISettings(); // Retry after loading
+                displayAISettingsContent(); // Show content after loading
             } else {
                 // Show fallback if still no providers
                 showFallbackProviders();
@@ -346,6 +379,22 @@ function showAISettings() {
             console.error('❌ Failed to load providers:', error);
             showFallbackProviders();
         });
+        // Still show the panel but with loading message
+        panel.style.display = 'block';
+        providersList.innerHTML = '<div style="text-align: center; padding: 20px;">⏳ Đang tải...</div>';
+        return;
+    }
+    
+    displayAISettingsContent();
+}
+
+// Display AI settings content 
+function displayAISettingsContent() {
+    const panel = document.getElementById('ai-settings-panel');
+    const providersList = document.getElementById('ai-providers-list');
+    
+    if (!panel || !providersList) {
+        console.error('❌ AI settings panel elements not found');
         return;
     }
     
@@ -478,6 +527,7 @@ function hideAISettings() {
     const panel = document.getElementById('ai-settings-panel');
     if (panel) {
         panel.style.display = 'none';
+        console.log('✅ AI Settings panel hidden');
     }
 }
 
@@ -605,7 +655,7 @@ function addMessage(text, sender, metadata = {}) {
     messageDiv.className = `message ${sender}-message`;
     
     const isBot = sender === 'bot';
-    const avatar = isBot ? '🤖' : '👤';
+    const avatar = isBot ? '<img src="/assets/favicon.png" alt="Bot" style="width: 24px; height: 24px; object-fit: contain;">' : '👤';
     
     let messageHTML = `
         <div class="message-content ${metadata.isError ? 'error-message' : ''} ${metadata.isSystem ? 'system-message' : ''}">
@@ -617,7 +667,10 @@ function addMessage(text, sender, metadata = {}) {
         messageHTML += `
             <div class="ai-metadata">
                 <div class="ai-model-info">
-                    <span class="ai-badge">🤖 ${metadata.aiProvider || 'AI'}</span>
+                    <span class="ai-badge">
+                        <img src="/assets/favicon.png" alt="AI" style="width: 16px; height: 16px; object-fit: contain; margin-right: 4px;">
+                        ${metadata.aiProvider || 'AI'}
+                    </span>
                     ${metadata.aiModel ? `<span class="ai-model">${metadata.aiModel}</span>` : ''}
                 </div>
                 ${metadata.responseTime ? `<div class="response-time">⚡ ${metadata.responseTime}ms</div>` : ''}

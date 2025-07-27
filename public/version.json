@@ -1,0 +1,12 @@
+{
+  "version": "202507271729",
+  "buildTime": "2025-07-27T10:29:25.720Z",
+  "description": "PedMed VNCH - Session-based authentication, Groq AI default, Cache busting system",
+  "features": [
+    "Session-based login",
+    "Groq AI as default",
+    "Enhanced cache management",
+    "Auto version checking",
+    "Improved performance"
+  ]
+}

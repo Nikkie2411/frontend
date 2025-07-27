@@ -16,6 +16,16 @@ body.login-active {
   overflow: hidden;
 }
 
+/* Hide main app when login is active */
+body.login-active #main-app {
+  display: none !important;
+}
+
+/* Hide login screen when not in login mode */
+body:not(.login-active) #login-screen {
+  display: none !important;
+}
+
 #login-screen {
   width: 100%;
   flex: 1;
@@ -1217,7 +1227,7 @@ body.login-active #chat-widget {
 .chat-toggle {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #00b383, #00a76d);
+  background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1226,22 +1236,25 @@ body.login-active #chat-widget {
   box-shadow: 0 8px 32px rgba(0, 179, 131, 0.25);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid #00b383;
 }
 
 .chat-toggle:hover {
   transform: translateY(-3px) scale(1.05);
   box-shadow: 0 12px 40px rgba(0, 179, 131, 0.35);
-  background: linear-gradient(135deg, #00c797, #00b383);
+  background: #f8f9fa;
+  border-color: #00c797;
 }
 
 .chat-toggle.active {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  background: #ffebee;
+  border-color: #ff6b6b;
   box-shadow: 0 8px 32px rgba(255, 107, 107, 0.25);
 }
 
 .chat-toggle.active:hover {
-  background: linear-gradient(135deg, #ff7979, #ff6b6b);
+  background: #fce4ec;
+  border-color: #ff7979;
   box-shadow: 0 12px 40px rgba(255, 107, 107, 0.35);
 }
 
@@ -1249,9 +1262,21 @@ body.login-active #chat-widget {
   font-size: 26px;
   color: white;
   transition: transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-icon img {
+  transition: transform 0.2s ease;
+  object-fit: cover;
 }
 
 .chat-toggle:hover .chat-icon {
+  transform: scale(1.1);
+}
+
+.chat-toggle:hover .chat-icon img {
   transform: scale(1.1);
 }
 
@@ -1388,10 +1413,11 @@ body.login-active #chat-widget {
 
 .chat-status {
   font-size: 13px;
-  opacity: 0.9;
-  font-weight: 400;
+  opacity: 1;
+  font-weight: 500;
   margin-top: 1px;
-  color: #ffffff;
+  color: #e8f4ff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 /* Chat Controls */
@@ -1960,6 +1986,11 @@ body.login-active #chat-widget {
   
   .chat-icon {
     font-size: 22px;
+  }
+  
+  .chat-icon img {
+    width: 28px !important;
+    height: 28px !important;
   }
   
   .chat-tooltip {

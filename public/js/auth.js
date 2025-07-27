@@ -17,25 +17,57 @@ const Auth = {
     }
 };
 
-  // Initialize
-  window.onload = async function() {
-    // Ẩn spinner khi bắt đầu kiểm tra auth
+  // Utility function to switch between login and main app
+  function showScreen(screen) {
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
     const spinner = document.getElementById('spinner');
     
+    // Hide spinner
+    if (spinner) spinner.style.display = 'none';
+    
+    if (screen === 'login') {
+      document.body.classList.add('login-active');
+      if (mainApp) mainApp.style.display = 'none';
+      if (loginScreen) loginScreen.style.display = 'block';
+      console.log('🔐 Showing login screen');
+    } else if (screen === 'main') {
+      document.body.classList.remove('login-active');
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (mainApp) mainApp.style.display = 'block';
+      console.log('🏠 Showing main app');
+    }
+  }
+
+  // Initialize
+  window.onload = async function() {
+    console.log('🚀 Initializing auth system...');
+    
+    // Clear any previous tab close flag (this means page was refreshed/reloaded)
+    if (sessionStorage.getItem('possibleTabClose') === 'true') {
+      sessionStorage.removeItem('possibleTabClose');
+      console.log('🔄 Page reloaded - clearing tab close flag');
+    }
+    
+    // Initially hide both screens to prevent flashing
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
+    if (loginScreen) loginScreen.style.display = 'none';
+    if (mainApp) mainApp.style.display = 'none';
+    
     if (Auth.isLoggedIn()) {
+      console.log('📋 User is logged in, checking session...');
       // Kiểm tra session tự động
       const valid = await checkSession();
       if (!valid) {
+        console.log('❌ Session invalid, showing login');
         // Nếu session không hợp lệ, hiển thị trang login
-        spinner.style.display = 'none';
-        document.body.classList.add('login-active');
-        document.getElementById('login-screen').style.display = 'block';
+        showScreen('login');
         return;
       }
+      console.log('✅ Session valid, showing main app');
       // Session hợp lệ, hiển thị app chính
-      spinner.style.display = 'none';
-      document.body.classList.remove('login-active');
-      document.getElementById('main-app').style.display = 'block';
+      showScreen('main');
       const username = Auth.getUser();
       const deviceId = await Auth.getDeviceId();
       connectWebSocket(username, deviceId);
@@ -48,34 +80,66 @@ const Auth = {
       // Start new device validation system
       startDeviceValidation();
     } else {
+      console.log('🔒 User not logged in, showing login screen');
       // Chưa đăng nhập, hiển thị trang login
-      spinner.style.display = 'none';
-      document.body.classList.add('login-active');
-      document.getElementById('login-screen').style.display = 'block';
+      showScreen('login');
     }
     
-    // Auto logout when tab is closed or page is refreshed (session-based)
-    window.addEventListener('beforeunload', async function(e) {
-      if (Auth.isLoggedIn()) {
-        const username = Auth.getUser();
-        const deviceId = await Auth.getDeviceId();
-        
-        // Logout from server
-        try {
-          await fetch('/api/logout-device-from-sheet', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, deviceId })
-          });
-        } catch (error) {
-          console.error('Error during beforeunload logout:', error);
-        }
-        
-        // Clear session storage
-        Auth.logout();
+    // Track if this is a refresh vs actual tab close
+    let isRefreshing = false;
+    
+    // Detect refresh (F5, Ctrl+R, etc.)
+    window.addEventListener('keydown', function(e) {
+      if ((e.key === 'F5') || (e.ctrlKey && e.key === 'r') || (e.ctrlKey && e.key === 'R')) {
+        isRefreshing = true;
+        console.log('� Page refresh detected, preserving session...');
+      }
+    });
+    
+    // Detect when user navigates away (but not refresh)
+    window.addEventListener('beforeunload', function(e) {
+      // Only mark as refreshing if it's actually a refresh
+      if (!isRefreshing) {
+        // This might be a tab close, mark it
+        sessionStorage.setItem('possibleTabClose', 'true');
+        console.log('❓ Possible tab close detected...');
+      } else {
+        console.log('🔄 Refresh detected, keeping session...');
+        isRefreshing = false; // Reset flag
       }
     });
   };
+
+  // Additional cleanup when window is about to close (but not refresh)
+  window.addEventListener('pagehide', async function(e) {
+    // Check if this was marked as a possible tab close (not refresh)
+    const possibleClose = sessionStorage.getItem('possibleTabClose');
+    
+    if (Auth.isLoggedIn() && possibleClose === 'true') {
+      const username = Auth.getUser();
+      const deviceId = await Auth.getDeviceId();
+      
+      console.log('� Tab actually closing, performing logout...');
+      
+      try {
+        // Use sendBeacon for more reliable delivery
+        const data = JSON.stringify({ username, deviceId });
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(`${BACKEND_URL}/api/logout-device-from-sheet`, blob);
+        console.log('✅ Final logout beacon sent');
+      } catch (error) {
+        console.error('❌ Error during pagehide logout:', error);
+      }
+      
+      // Final cleanup only if actually closing
+      sessionStorage.clear();
+      localStorage.clear();
+    } else if (possibleClose === 'true') {
+      // Clear the flag but don't logout (user might not be logged in)
+      sessionStorage.removeItem('possibleTabClose');
+      console.log('🔄 False alarm - this was just a page navigation');
+    }
+  });
 
   // Simplified and more effective device validation system
   let deviceValidationInterval;
@@ -268,9 +332,7 @@ const Auth = {
 
       if (result.success && result.data.success) {
           Auth.login(username);
-          document.body.classList.remove('login-active');
-          document.getElementById("login-screen").style.display = "none";
-          document.getElementById("main-app").style.display = "block";
+          showScreen('main');
           connectWebSocket(username, deviceId);
           
           // Initialize chatbot after successful login
